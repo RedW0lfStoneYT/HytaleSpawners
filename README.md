@@ -7,7 +7,7 @@ An advanced spawner mod for hytale
 - Render the spawner entity in the middle of the spawner block
 
 ## Installation
-1. Download the mod from the releases section or from [curse forge](https://curseforge.com/hytale/mods/hytale-spawners).
+1. Download the mod from the releases section or from [curse forge](https://curseforge.com/hytale/mods/mob-spawners).
 2. Place the downloaded file into your Hytale mods folder.
 3. Launce the server
 4. Enjoy!
