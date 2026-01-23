@@ -1,10 +1,10 @@
 package dev.selena.hytale.spawners.util.config;
 
 import com.google.gson.annotations.Expose;
+import com.hypixel.hytale.protocol.Range;
 import com.hypixel.hytale.protocol.Size;
 import dev.selena.core.config.Comment;
 import lombok.Getter;
-import com.hypixel.hytale.protocol.Range;
 
 public class Config {
 
@@ -32,6 +32,21 @@ public class Config {
     @Expose
     @Comment("Should the spawner render the model of the mob type")
     private boolean renderMobModel = true;
+
+    @Getter
+    @Expose
+    @Comment("Maximum number of non player entities allowed nearby when spawning")
+    private int maxNearbyEntities = 5;
+
+    @Getter
+    @Expose
+    @Comment("Should the spawner check for nearby entities before spawning")
+    private boolean checkNearbyEntities = true;
+
+    @Getter
+    @Expose
+    @Comment("The radius to check for nearby entities")
+    private Size nearbyEntitiesCheckRadius = new Size(5, 5);
 
 
     public static Config get() {
