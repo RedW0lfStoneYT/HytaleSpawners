@@ -1,0 +1,12 @@
+{
+  "Group": "RWS",
+  "Name": "Spawners",
+  "Version": "1.0.0",
+  "Main": "dev.selena.hytale.spawners.SpawnerMain",
+  "IncludesAssetPack": true,
+  "Authors": [
+    {
+      "Name": "Selena"
+    }
+  ]
+}

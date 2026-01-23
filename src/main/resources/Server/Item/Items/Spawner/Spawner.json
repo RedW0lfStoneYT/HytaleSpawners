@@ -1,0 +1,59 @@
+{
+  "TranslationProperties": {
+    "Name": "Spawner",
+    "Description": "spawner.name"
+  },
+  "Icon": "Icons/ItemsGenerated/Spawner.png",
+  "Parent": "Plant_Coral_Block_Green",
+  "BlockType": {
+    "Textures": [
+      {
+        "Weight": 1,
+        "All": "Items/Spawner/Spawner.png"
+      }
+    ],
+    "ParticleColor": "#594680",
+    "BlockEntity": {
+      "Components": {
+        "Spawner": {
+          "SpawnType": "Pig",
+          "SpawnCount": {
+            "Min": 1,
+            "Max": 5
+          },
+          "SpawnRadius": {
+            "Width": 3,
+            "Height": 3
+          },
+          "SpawnInterval": {
+            "Min": 200,
+            "Max": 400
+          },
+          "CurrentSpawnIntervalTicks": 200
+        }
+      }
+    },
+    "Gathering": {
+      "Breaking": {
+        "DropList": "Empty",
+        "GatherType": "Rocks"
+      }
+    },
+    "Opacity": "Semitransparent",
+    "Material": "Solid",
+    "DrawType": "Cube",
+    "RequiresAlphaBlending": true
+  },
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -13.5
+    ]
+  }
+}

@@ -1,0 +1,103 @@
+plugins {
+    id 'java'
+    id("com.gradleup.shadow") version "9.3.1"
+    id 'maven-publish'
+}
+
+group = 'dev.selena'
+version = '1.0.0'
+description = "An easy to use spawner mod for Hytale servers"
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compileOnly(files("libs/HytaleServer.jar"))
+
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.jetbrains:annotations:24.1.0")
+    compileOnly 'org.projectlombok:lombok:1.18.40'
+    annotationProcessor 'org.projectlombok:lombok:1.18.40'
+    implementation("dev.selena.hytalecore:HytaleCore:1.0")
+
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+// Configure Java compilation
+compileJava {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+// Configure resource processing
+processResources {
+    filteringCharset = 'UTF-8'
+
+    // Replace placeholders in manifest.json
+    def props = [
+            group: project.group,
+            version: project.version,
+            description: project.description
+    ]
+    inputs.properties(props)
+
+    filesMatching("manifest.json") {
+        expand(props)
+    }
+}
+
+
+
+shadowJar {
+    archiveBaseName.set(rootProject.name)
+    archiveClassifier.set("")
+
+    relocate("com.google.gson", "dev.selena.libs.gson")
+
+}
+
+// Configure tests
+test {
+    useJUnitPlatform()
+}
+
+// Make build depend on shadowJar
+build {
+    dependsOn(shadowJar)
+}
+
+// Configure Java toolchain
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "Public"
+            if (version.toString().endsWith("SNAPSHOT")) {
+                url = "https://repo.selenadevelopment.com/snapshots"
+            } else {
+                url = "https://repo.selenadevelopment.com/releases"
+            }
+            credentials(PasswordCredentials)
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+    }
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            groupId = group
+            artifactId = rootProject.name
+            version = rootProject.version
+
+        }
+    }
+}
