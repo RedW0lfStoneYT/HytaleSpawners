@@ -4,6 +4,7 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.*;
+import com.hypixel.hytale.component.spatial.SpatialResource;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -17,6 +18,7 @@ import com.hypixel.hytale.server.core.codec.ProtocolCodecs;
 import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.modules.entity.component.*;
 import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
 import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
@@ -38,7 +40,9 @@ import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class SpawnerBlock implements Component<ChunkStore> {
 
@@ -64,6 +68,9 @@ public class SpawnerBlock implements Component<ChunkStore> {
             .append(new KeyedCodec<>("CurrentSpawnIntervalTicks", Codec.INTEGER), (spawner, currentInterval) -> {
                 spawner.currentSpawnIntervalTicks = currentInterval;
             }, spawner -> spawner.currentSpawnIntervalTicks).add()
+            .append(new KeyedCodec<>("PreviewEntityUUID", Codec.UUID_BINARY), (spawner, uuid) -> {
+                spawner.previewEntityUUID = uuid;
+            }, spawner -> spawner.previewEntityUUID).add()
             .build();
 
     @Getter
@@ -88,7 +95,10 @@ public class SpawnerBlock implements Component<ChunkStore> {
     @Setter
     private int currentSpawnIntervalTicks;
     @Getter
-    private Ref<EntityStore> previewEntityRef;
+    @Setter
+    private UUID previewEntityUUID;
+    @Getter
+    private Ref<EntityStore> previewEntity;
 
 
     public SpawnerBlock() {
@@ -135,7 +145,6 @@ public class SpawnerBlock implements Component<ChunkStore> {
     public SpawnerSpawnAttemptReturn trySpawn(World world, int blockX, int blockY, int blockZ, String type) {
         Vector3i blockPosition = new Vector3i(blockX, blockY, blockZ);
         int count = getRandom(spawnCount.min, spawnCount.max);
-        SpawnerMain.get().getLogger().atInfo().log("Spawning " + count + " of type " + spawnType + " within radius " + spawnRadius);
         SpawnerSpawnAttemptReturn spawnAttemptReturn = new SpawnerSpawnAttemptReturn();
         for (int i = 0; i < count; i++) {
             int offsetX = getRandom(-spawnRadius.width, spawnRadius.width);
@@ -163,11 +172,12 @@ public class SpawnerBlock implements Component<ChunkStore> {
             }
             Model model = spawningContext.getModel();
 
-            Pair<Ref<EntityStore>, NPCEntity> spawned = NPCPlugin.get().spawnEntity(world.getEntityStore().getStore(), roleIndex, spawnPos.add(0.5,0,0.5), new Vector3f(0, 0, 0), model, null);
+            Pair<Ref<EntityStore>, NPCEntity> spawned = NPCPlugin.get().spawnEntity(world.getEntityStore().getStore(), roleIndex, spawnPos.add(0.5, 0, 0.5), new Vector3f(0, 0, 0), model, null);
             if (spawned == null) {
                 spawnAttemptReturn.setSuccess(false);
                 return spawnAttemptReturn;
             }
+
             spawnAttemptReturn.addSpawnedEntityPair(spawned);
         }
         spawnAttemptReturn.setSuccess(true);
@@ -209,15 +219,39 @@ public class SpawnerBlock implements Component<ChunkStore> {
     public void updatePreviewEntity(CommandBuffer<ChunkStore> commandBuffer, Vector3i blockPos, boolean removeIfExist) {
         if (!Config.get().isRenderMobModel())
             return;
+
         Store<EntityStore> entityStore = commandBuffer.getExternalData().getWorld().getEntityStore().getStore();
 
-        if (previewEntityRef != null && removeIfExist) {
-            entityStore.removeEntity(previewEntityRef, RemoveReason.REMOVE);
-            previewEntityRef = null;
+        if (previewEntity == null && previewEntityUUID != null) {
+            previewEntity = commandBuffer.getExternalData().getWorld().getEntityStore().getRefFromUUID(previewEntityUUID);
+            if (previewEntity != null && !previewEntity.isValid()) {
+                previewEntity = null;
+                previewEntityUUID = null;
+            }
         }
-        else if (previewEntityRef != null && previewEntityRef.isValid()) {
-            return;
+
+        if (previewEntity != null) {
+            if (!removeIfExist)
+                return;
+            entityStore.removeEntity(previewEntity, RemoveReason.REMOVE);
+            previewEntity = null;
+            previewEntityUUID = null;
+        } else {
+            List<Ref<EntityStore>> results = new ArrayList<>();
+            SpatialResource<Ref<EntityStore>, EntityStore> entitySpatialResource = entityStore.getResource(EntityModule.get().getEntitySpatialResourceType());
+
+            Vector3d center = blockPos.toVector3d().add(0.5, 0.5, 0.5);
+            entitySpatialResource.getSpatialStructure().collect(center, 1.0, results);
+
+
+            if (!results.isEmpty() && results.getFirst() != null) {
+                previewEntity = results.getFirst();
+                entityStore.removeEntity(previewEntity, RemoveReason.REMOVE);
+                previewEntity = null;
+                previewEntityUUID = null;
+            }
         }
+
 
         Model model = Model.createStaticScaledModel(ModelAsset.getAssetMap().getAsset(getSpawnType()), 0.5f);
 
@@ -229,14 +263,21 @@ public class SpawnerBlock implements Component<ChunkStore> {
         preview.addComponent(HeadRotation.getComponentType(), new HeadRotation(Vector3f.ZERO));
         preview.addComponent(PropComponent.getComponentType(), PropComponent.get());
         preview.ensureComponent(UUIDComponent.getComponentType());
-        previewEntityRef = entityStore.addEntity(preview, AddReason.SPAWN);
+
+        previewEntity = entityStore.addEntity(preview, AddReason.SPAWN);
+
+        UUIDComponent uuidComponent = entityStore.getComponent(previewEntity, UUIDComponent.getComponentType());
+        if (uuidComponent != null) {
+            previewEntityUUID = uuidComponent.getUuid();
+        }
+
     }
 
     public void removePreviewEntity(CommandBuffer<ChunkStore> commandBuffer) {
         Store<EntityStore> entityStore = commandBuffer.getExternalData().getWorld().getEntityStore().getStore();
-        if (previewEntityRef != null && previewEntityRef.isValid()) {
-            entityStore.removeEntity(previewEntityRef, RemoveReason.REMOVE);
-            previewEntityRef = null;
+        if (previewEntity != null && previewEntity.isValid()) {
+            entityStore.removeEntity(previewEntity, RemoveReason.REMOVE);
+            previewEntity = null;
         }
     }
 }
