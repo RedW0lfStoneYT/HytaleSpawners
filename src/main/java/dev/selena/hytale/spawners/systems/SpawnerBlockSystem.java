@@ -101,7 +101,6 @@ public class SpawnerBlockSystem {
             if (spawnerBlock == null) {
                 return;
             }
-            SpawnerMain.get().getLogger().atInfo().log("Spawner block: " + spawnerBlock.getSpawnType());
 
             BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
             if (info == null) {
