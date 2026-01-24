@@ -1,6 +1,8 @@
 package dev.selena.hytale.spawners.util;
 
-import com.hypixel.hytale.component.*;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -15,7 +17,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import dev.selena.hytale.spawners.SpawnerMain;
 import dev.selena.hytale.spawners.blockstates.SpawnerBlock;
 import dev.selena.hytale.spawners.events.SpawnerSpawnEvent;
 import dev.selena.hytale.spawners.util.config.Config;
@@ -30,12 +31,13 @@ public class SpawnerUtil {
 
         World world = commandBuffer.getExternalData().getWorld();
         WorldTimeResource worldTimeResource = world.getEntityStore().getStore().getResource(WorldTimeResource.getResourceType());
-        Instant currentTime = worldTimeResource.getGameTime();
+        Instant currentTime = Config.get().isUseWorldTimeTicks() ?
+                worldTimeResource.getGameTime()
+                : Instant.ofEpochSecond(System.currentTimeMillis() / (1000L/world.getTps()));
         if (spawnerBlock.getLastSpawnGameTick() == null) {
             spawnerBlock.setLastSpawnGameTick(currentTime);
         }
         long elapsed = currentTime.getEpochSecond() - spawnerBlock.getLastSpawnGameTick().getEpochSecond();
-
         world.execute(() -> {
             ChunkSection section = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
             int worldX = ChunkUtil.worldCoordFromLocalCoord(section.getX(), x);

@@ -48,6 +48,11 @@ public class Config {
     @Comment("The radius to check for nearby entities")
     private Size nearbyEntitiesCheckRadius = new Size(5, 5);
 
+    @Getter
+    @Expose
+    @Comment("Should the ticking rely on world time ticks")
+    private boolean useWorldTimeTicks = true;
+
 
     public static Config get() {
         return Configs.CONFIG.getConfig();
