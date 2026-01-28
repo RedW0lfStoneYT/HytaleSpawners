@@ -30,9 +30,11 @@ import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.systems.RoleChangeSystem;
 import com.hypixel.hytale.server.spawning.ISpawnableWithModel;
 import com.hypixel.hytale.server.spawning.SpawningContext;
 import dev.selena.hytale.spawners.SpawnerMain;
+import dev.selena.hytale.spawners.components.NerfedMobComponent;
 import dev.selena.hytale.spawners.util.config.Config;
 import dev.selena.hytale.spawners.util.objects.SpawnerSpawnAttemptReturn;
 import it.unimi.dsi.fastutil.Pair;
@@ -183,7 +185,15 @@ public class SpawnerBlock implements Component<ChunkStore> {
                 spawnAttemptReturn.setSuccess(false);
                 return spawnAttemptReturn;
             }
-
+            if (Config.get().isNerfSpawnerMobs()) {
+                Ref<EntityStore> entityRef = spawned.first();
+                NPCEntity entity = spawned.second();
+                int emptyRoleIndex = NPCPlugin.get().getIndex("Spawner_Role");
+                NerfedMobComponent nerfedComponent = new NerfedMobComponent();
+                nerfedComponent.setDrops(entity.getRole().getDropListId());
+                RoleChangeSystem.requestRoleChange(entityRef, entity.getRole(), emptyRoleIndex, false, entityRef.getStore());
+                entityRef.getStore().addComponent(entityRef, NerfedMobComponent.getComponentType(), nerfedComponent);
+            }
             spawnAttemptReturn.addSpawnedEntityPair(spawned);
         }
         spawnAttemptReturn.setSuccess(true);
@@ -275,6 +285,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
         preview.addComponent(HeadRotation.getComponentType(), new HeadRotation(Vector3f.ZERO));
         preview.addComponent(PropComponent.getComponentType(), PropComponent.get());
         preview.ensureComponent(UUIDComponent.getComponentType());
+        preview.ensureComponent(SpawnerMain.get().getSpawnerEntityComponentType());
 
         previewEntity = entityStore.addEntity(preview, AddReason.SPAWN);
 
