@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'dev.selena'
-version = '1.1.0'
+version = '1.2.0'
 description = "An easy to use spawner mod for Hytale servers"
 
 repositories {
