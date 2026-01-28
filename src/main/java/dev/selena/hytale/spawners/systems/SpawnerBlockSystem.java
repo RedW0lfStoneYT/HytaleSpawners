@@ -7,13 +7,20 @@ import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.protocol.Range;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.asset.type.blocktick.BlockTickStrategy;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation;
+import com.hypixel.hytale.server.core.modules.entity.component.PropComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
+import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
+import com.hypixel.hytale.server.core.modules.item.ItemModule;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -24,15 +31,19 @@ import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.npc.systems.NPCDamageSystems;
 import dev.selena.hytale.spawners.SpawnerMain;
 import dev.selena.hytale.spawners.blockstates.SpawnerBlock;
+import dev.selena.hytale.spawners.components.NerfedMobComponent;
 import dev.selena.hytale.spawners.events.SpawnerPlaceEvent;
 import dev.selena.hytale.spawners.util.SpawnerUtil;
 import dev.selena.hytale.spawners.util.config.Config;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 public class SpawnerBlockSystem {
 
@@ -133,7 +144,7 @@ public class SpawnerBlockSystem {
             }
             BlockSection blockSection = commandBuffer.getComponent(section, BlockSection.getComponentType());
 
-
+            spawnerBlock.setSpawnInterval();
             SpawnerUtil.tickSpawnerBlock(commandBuffer, blockChunk, blockSection, section, ref, spawnerBlock, x, y, z, true);
 
         }
@@ -144,7 +155,6 @@ public class SpawnerBlockSystem {
             if (removeReason == RemoveReason.UNLOAD || (spawner = commandBuffer.getComponent(ref, SpawnerMain.get().getSpawnerBlockComponentType())) == null) {
                 return;
             }
-            spawner.setSpawnIntervalTicks(new Range(1000, 8000));
             BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
             if (info == null) {
                 throw new AssertionError();
@@ -186,6 +196,34 @@ public class SpawnerBlockSystem {
         @Override
         public Query<ChunkStore> getQuery() {
             return Query.and(BlockModule.BlockStateInfo.getComponentType(), SpawnerMain.get().getSpawnerBlockComponentType());
+        }
+    }
+
+
+    public static class PreviewRotating extends EntityTickingSystem<EntityStore> {
+
+        @Override
+        public void tick(float v, int i, @NotNull ArchetypeChunk<EntityStore> archetypeChunk, @NotNull Store<EntityStore> store, @NotNull CommandBuffer<EntityStore> commandBuffer) {
+            Ref<EntityStore> entityRef = archetypeChunk.getReferenceTo(i);
+            if (!entityRef.isValid()) {
+                return;
+            }
+
+            TransformComponent transform = commandBuffer.getComponent(entityRef, TransformComponent.getComponentType());
+            if (transform != null) {
+                Vector3f rotation = transform.getRotation();
+                float radians = (float) (Math.PI / 180) * Config.get().getPreviewEntityRotationDegreesPerTick();;
+                rotation = rotation.add(0, radians, 0);
+                transform.setRotation(rotation);
+                commandBuffer.replaceComponent(entityRef, HeadRotation.getComponentType(), new HeadRotation(rotation));
+                commandBuffer.replaceComponent(entityRef, TransformComponent.getComponentType(), transform);
+            }
+        }
+
+        @Nullable
+        @Override
+        public Query<EntityStore> getQuery() {
+            return Query.and(SpawnerMain.get().getSpawnerEntityComponentType(), PropComponent.getComponentType());
         }
     }
 
@@ -236,6 +274,51 @@ public class SpawnerBlockSystem {
         @Override
         public Query<ChunkStore> getQuery() {
             return Query.and(BlockSection.getComponentType(), ChunkSection.getComponentType());
+        }
+    }
+
+    public static class NerfedMobDeath extends NPCDamageSystems.DropDeathItems {
+
+
+        @Override
+        public void onComponentAdded(@NotNull Ref<EntityStore> ref, @NotNull DeathComponent component, @NotNull Store<EntityStore> store, @NotNull CommandBuffer<EntityStore> commandBuffer) {
+            NerfedMobComponent nerfedMobComponent = store.getComponent(ref, NerfedMobComponent.getComponentType());
+            if (nerfedMobComponent == null) {
+                return;
+            }
+            String dropListID = nerfedMobComponent.getDrops();
+            List<ItemStack> itemsToDrop = new ObjectArrayList<>();
+
+            if (dropListID != null) {
+                ItemModule itemModule = ItemModule.get();
+                if (itemModule.isEnabled()) {
+                    List<ItemStack> randomItemsToDrop = itemModule.getRandomItemDrops(dropListID);
+                    itemsToDrop.addAll(randomItemsToDrop);
+                }
+            }
+            if (!itemsToDrop.isEmpty()) {
+                TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
+                if (transformComponent == null) {
+                    throw new AssertionError();
+                }
+                Vector3d position = transformComponent.getPosition();
+                HeadRotation headRotationComponent = store.getComponent(ref, HeadRotation.getComponentType());
+                if (headRotationComponent == null) {
+                    throw new AssertionError();
+                }
+                Vector3f headRotation = headRotationComponent.getRotation();
+                Vector3d dropPosition = position.clone().add(0.0d, 1.0d, 0.0d);
+                Holder<EntityStore>[] drops = ItemComponent.generateItemDrops(store, itemsToDrop, dropPosition, headRotation.clone());
+                commandBuffer.addEntities(drops, AddReason.SPAWN);
+            }
+
+
+
+        }
+
+        @Override
+        public Query<EntityStore> getQuery() {
+            return NerfedMobComponent.getComponentType();
         }
     }
 
