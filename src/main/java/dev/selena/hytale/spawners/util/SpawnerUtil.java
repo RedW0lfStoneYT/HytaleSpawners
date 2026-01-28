@@ -45,8 +45,8 @@ public class SpawnerUtil {
             int worldZ = ChunkUtil.worldCoordFromLocalCoord(section.getZ(), z);
             spawnerBlock.updatePreviewEntity(commandBuffer, new Vector3i(worldX, worldY, worldZ), false);
 
+            AtomicInteger nearbyNPCCount = new AtomicInteger();
             if (Config.get().isCheckNearbyEntities()) {
-                AtomicInteger nearbyNPCCount = new AtomicInteger();
                 Size spawnRadius = Config.get().getSpawnRadius();
                 int width = spawnRadius.width;
                 int height = spawnRadius.height;
@@ -65,8 +65,7 @@ public class SpawnerUtil {
                         nearbyNPCCount.getAndIncrement();
                     }
                 });
-
-                if (nearbyNPCCount.get() > Config.get().getMaxNearbyEntities()) {
+                if (nearbyNPCCount.get() >= Config.get().getMaxNearbyEntities()) {
                     return;
                 }
             }
@@ -79,8 +78,11 @@ public class SpawnerUtil {
                 }
                 SpawnerSpawnAttemptReturn spawned = new SpawnerSpawnAttemptReturn();
                 for (int i = 0; i < spawnerBlock.getMaxSpawnAttempts(); i++) {
-
-                    spawned = spawnerBlock.trySpawn(world, worldX, worldY, worldZ, pre.getEntityType());
+                    int max = -1;
+                    if (Config.get().isCheckNearbyEntities()) {
+                        max = Math.max(Config.get().getMaxNearbyEntities() - nearbyNPCCount.get(), 0);
+                    }
+                    spawned = spawnerBlock.trySpawn(world, worldX, worldY, worldZ, pre.getEntityType(), max);
 
                     if (spawned.isSuccess()) {
                         break;
