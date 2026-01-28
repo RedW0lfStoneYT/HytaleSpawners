@@ -5,6 +5,7 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.spatial.SpatialResource;
+import com.hypixel.hytale.math.Axis;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -229,13 +230,13 @@ public class SpawnerBlock implements Component<ChunkStore> {
 
         if (previewEntity == null && previewEntityUUID != null) {
             previewEntity = commandBuffer.getExternalData().getWorld().getEntityStore().getRefFromUUID(previewEntityUUID);
-            if (previewEntity != null && !previewEntity.isValid()) {
-                previewEntity = null;
-                previewEntityUUID = null;
-            }
+        }
+        if (previewEntity != null && !previewEntity.isValid()) {
+            previewEntity = null;
+            previewEntityUUID = null;
         }
 
-        if (previewEntity != null) {
+        if (previewEntity != null && previewEntity.isValid()) {
             if (!removeIfExist)
                 return;
             entityStore.removeEntity(previewEntity, RemoveReason.REMOVE);
