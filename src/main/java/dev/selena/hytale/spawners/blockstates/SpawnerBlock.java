@@ -144,9 +144,12 @@ public class SpawnerBlock implements Component<ChunkStore> {
         this.currentSpawnIntervalTicks = random.nextInt(spawnIntervalTicks.min, spawnIntervalTicks.max + 1);
     }
 
-    public SpawnerSpawnAttemptReturn trySpawn(World world, int blockX, int blockY, int blockZ, String type) {
+    public SpawnerSpawnAttemptReturn trySpawn(World world, int blockX, int blockY, int blockZ, String type, int max) {
         Vector3i blockPosition = new Vector3i(blockX, blockY, blockZ);
         int count = getRandom(spawnCount.min, spawnCount.max);
+        if (max != -1 && count > max) {
+            count = max;
+        }
         SpawnerSpawnAttemptReturn spawnAttemptReturn = new SpawnerSpawnAttemptReturn();
         for (int i = 0; i < count; i++) {
             int offsetX = getRandom(-spawnRadius.width, spawnRadius.width);
