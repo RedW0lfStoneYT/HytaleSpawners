@@ -259,13 +259,19 @@ public class SpawnerBlock implements Component<ChunkStore> {
         }
 
 
-        Model model = Model.createStaticScaledModel(ModelAsset.getAssetMap().getAsset(getSpawnType()), 0.5f);
+        Model model = Model.createStaticScaledModel(ModelAsset.getAssetMap().getAsset(getSpawnType()), 1f);
+        double maxDimension = Math.max(
+                Math.max(model.getBoundingBox().dimension(Axis.X), model.getBoundingBox().dimension(Axis.Y)),
+                model.getBoundingBox().dimension(Axis.Z)
+        );
+        float scaleFactor = (float) (0.5 / maxDimension);
+        model = Model.createStaticScaledModel(ModelAsset.getAssetMap().getAsset(getSpawnType()), scaleFactor);
 
         Holder<EntityStore> preview = entityStore.getRegistry().newHolder();
         preview.addComponent(NetworkId.getComponentType(), new NetworkId(entityStore.getExternalData().takeNextNetworkId()));
-        preview.addComponent(TransformComponent.getComponentType(), new TransformComponent(blockPos.toVector3d().add(.5f, .125f, .5f), Vector3f.ZERO));
+        preview.addComponent(TransformComponent.getComponentType(), new TransformComponent(blockPos.toVector3d().add(.5f, .25f, .5f), Vector3f.ZERO));
         preview.addComponent(ModelComponent.getComponentType(), new ModelComponent(model));
-        preview.addComponent(PersistentModel.getComponentType(), new PersistentModel(new Model.ModelReference(getSpawnType(), .5f, null, true)));
+        preview.addComponent(PersistentModel.getComponentType(), new PersistentModel(new Model.ModelReference(getSpawnType(), scaleFactor, null, true)));
         preview.addComponent(HeadRotation.getComponentType(), new HeadRotation(Vector3f.ZERO));
         preview.addComponent(PropComponent.getComponentType(), PropComponent.get());
         preview.ensureComponent(UUIDComponent.getComponentType());
