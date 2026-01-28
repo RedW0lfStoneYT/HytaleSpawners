@@ -42,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 public class SpawnerBlock implements Component<ChunkStore> {
@@ -99,6 +100,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
     private UUID previewEntityUUID;
     @Getter
     private Ref<EntityStore> previewEntity;
+    private final Random random = new Random();
 
 
     public SpawnerBlock() {
@@ -139,7 +141,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
     }
 
     public void setSpawnInterval() {
-        this.currentSpawnIntervalTicks = (int) (Math.random() * (spawnIntervalTicks.max - spawnIntervalTicks.min + 1)) + spawnIntervalTicks.min;
+        this.currentSpawnIntervalTicks = random.nextInt(spawnIntervalTicks.min, spawnIntervalTicks.max + 1);
     }
 
     public SpawnerSpawnAttemptReturn trySpawn(World world, int blockX, int blockY, int blockZ, String type) {
@@ -198,7 +200,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
     }
 
     private int getRandom(int min, int max) {
-        return (int) (Math.random() * (max - min + 1)) + min;
+        return random.nextInt(min, max + 1);
     }
 
 
