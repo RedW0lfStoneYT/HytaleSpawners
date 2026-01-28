@@ -161,7 +161,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
                 spawnAttemptReturn.setSuccess(false);
                 return spawnAttemptReturn;
             }
-            int roleIndex = NPCPlugin.get().getIndex(spawnType);
+            int roleIndex = NPCPlugin.get().getIndex(type);
             Builder<Role> roleBuilder = NPCPlugin.get().tryGetCachedValidRole(roleIndex);
             if (roleBuilder == null) {
                 spawnAttemptReturn.setSuccess(false);
