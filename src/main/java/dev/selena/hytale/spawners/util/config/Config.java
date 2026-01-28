@@ -53,6 +53,21 @@ public class Config {
     @Comment("Should the ticking rely on world time ticks")
     private boolean useWorldTimeTicks = true;
 
+    @Getter
+    @Expose
+    @Comment("Should the preview entity rotate (EXPERIMENTAL)")
+    private boolean rotatePreviewEntity = true;
+
+    @Getter
+    @Expose
+    @Comment("The degrees per tick the preview entity should rotate (if enabled)")
+    private float previewEntityRotationDegreesPerTick = 10.0f;
+
+    @Getter
+    @Expose
+    @Comment("Should spawner spawned mobs be nerfed? (remove pathing and targeting)")
+    private boolean nerfSpawnerMobs = false;
+
 
     public static Config get() {
         return Configs.CONFIG.getConfig();
