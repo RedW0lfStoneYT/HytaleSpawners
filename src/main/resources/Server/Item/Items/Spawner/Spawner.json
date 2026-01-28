@@ -12,7 +12,7 @@
         "All": "Items/Spawner/Spawner.png"
       }
     ],
-    "ParticleColor": "#594680",
+    "ParticleColor": "#858585",
     "BlockEntity": {
       "Components": {
         "Spawner": {
