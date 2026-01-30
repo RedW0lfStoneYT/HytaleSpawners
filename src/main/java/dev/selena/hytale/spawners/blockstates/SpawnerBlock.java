@@ -194,6 +194,12 @@ public class SpawnerBlock implements Component<ChunkStore> {
                 RoleChangeSystem.requestRoleChange(entityRef, entity.getRole(), emptyRoleIndex, false, entityRef.getStore());
                 entityRef.getStore().addComponent(entityRef, NerfedMobComponent.getComponentType(), nerfedComponent);
             }
+            float timer;
+            if ((timer = Config.get().getSpawnedMobDespawnTimeSeconds()) != -1) {
+                spawned.second().setDespawnRemainingSeconds(timer);
+                spawned.second().setDespawning(true);
+            }
+
             spawnAttemptReturn.addSpawnedEntityPair(spawned);
         }
         spawnAttemptReturn.setSuccess(true);

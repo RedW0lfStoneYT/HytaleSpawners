@@ -68,6 +68,11 @@ public class Config {
     @Comment("Should spawner spawned mobs be nerfed? (remove pathing and targeting)")
     private boolean nerfSpawnerMobs = false;
 
+    @Getter
+    @Expose
+    @Comment("How long should the spawned mobs last before despawning (in seconds), -1 to disable")
+    private float spawnedMobDespawnTimeSeconds = 300;
+
 
     public static Config get() {
         return Configs.CONFIG.getConfig();
