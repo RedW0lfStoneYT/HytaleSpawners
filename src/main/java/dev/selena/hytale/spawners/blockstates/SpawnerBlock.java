@@ -159,7 +159,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
             int offsetY = getRandom(-spawnRadius.height, spawnRadius.height);
             int offsetZ = getRandom(-spawnRadius.width, spawnRadius.width);
             Vector3d spawnPos = new Vector3d(blockPosition.x + offsetX, blockPosition.y + offsetY, blockPosition.z + offsetZ);
-            spawnPos = getValidSpawnPoint(world, spawnPos, 10);
+            spawnPos = getValidSpawnPoint(world, spawnPos, 10, blockPosition.y + spawnRadius.height);
             if (spawnPos == null) {
                 spawnAttemptReturn.setSuccess(false);
                 return spawnAttemptReturn;
@@ -202,8 +202,10 @@ public class SpawnerBlock implements Component<ChunkStore> {
         return spawnAttemptReturn;
     }
 
-    private Vector3d getValidSpawnPoint(World world, Vector3d origin, int limit) {
+    private Vector3d getValidSpawnPoint(World world, Vector3d origin, int limit, int maxY) {
         for (int i = 0; i < limit; i++) {
+            if (origin.toVector3i().y > maxY)
+                return null;
             BlockType type = world.getBlockType(origin.toVector3i());
             if (type == null || type.equals(BlockType.EMPTY))
                 return origin;
