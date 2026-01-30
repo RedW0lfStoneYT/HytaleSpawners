@@ -71,18 +71,19 @@ public class SpawnerUtil {
             }
 
             if (elapsed >= spawnerBlock.getCurrentSpawnIntervalTicks()) {
+                int max = -1;
+                if (Config.get().isCheckNearbyEntities()) {
+                    max = Math.max(Config.get().getMaxNearbyEntities() - nearbyNPCCount.get(), 0);
+                }
                 SpawnerSpawnEvent.Pre pre = HytaleServer.get().getEventBus().dispatchFor(SpawnerSpawnEvent.Pre.class)
-                        .dispatch(new SpawnerSpawnEvent.Pre(spawnerBlock, spawnerBlock.getSpawnType(), world));
+                        .dispatch(new SpawnerSpawnEvent.Pre(spawnerBlock, spawnerBlock.getSpawnType(), world, max));
                 if (pre.isCancelled()) {
                     return;
                 }
                 SpawnerSpawnAttemptReturn spawned = new SpawnerSpawnAttemptReturn();
                 for (int i = 0; i < spawnerBlock.getMaxSpawnAttempts(); i++) {
-                    int max = -1;
-                    if (Config.get().isCheckNearbyEntities()) {
-                        max = Math.max(Config.get().getMaxNearbyEntities() - nearbyNPCCount.get(), 0);
-                    }
-                    spawned = spawnerBlock.trySpawn(world, worldX, worldY, worldZ, pre.getEntityType(), max);
+
+                    spawned = spawnerBlock.trySpawn(world, worldX, worldY, worldZ, pre.getEntityType(), pre.getMaxSpawnAmount());
 
                     if (spawned.isSuccess()) {
                         break;

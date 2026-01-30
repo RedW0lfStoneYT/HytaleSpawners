@@ -22,12 +22,16 @@ public class SpawnerSpawnEvent implements IEvent<Void> {
         @Getter
         @Setter
         private boolean cancelled;
+        @Getter
+        @Setter
+        private int maxSpawnAmount;
 
-        public Pre(SpawnerBlock spawnerBlock, String entityType, World world) {
+        public Pre(SpawnerBlock spawnerBlock, String entityType, World world, int maxSpawnAmount) {
             this.spawnerBlock = spawnerBlock;
             this.entityType = entityType;
             this.cancelled = false;
             this.world = world;
+            this.maxSpawnAmount = maxSpawnAmount;
         }
 
         public void setEntityType(String entityType) {
