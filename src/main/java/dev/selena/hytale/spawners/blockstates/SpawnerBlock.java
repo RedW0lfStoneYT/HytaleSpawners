@@ -51,30 +51,29 @@ import java.util.UUID;
 public class SpawnerBlock implements Component<ChunkStore> {
 
     public static final BuilderCodec<SpawnerBlock> CODEC = BuilderCodec.builder(SpawnerBlock.class, SpawnerBlock::new)
-            .append(new KeyedCodec<>("SpawnType", Codec.STRING), (spawner, type) -> {
-                spawner.spawnType = type;
-            }, spawner -> spawner.spawnType).add()
-            .append(new KeyedCodec<>("SpawnCount", ProtocolCodecs.RANGE), (spawner, count) -> {
-                spawner.spawnCount = count;
-            }, spawner -> spawner.spawnCount).add()
-            .append(new KeyedCodec<>("SpawnRadius", ProtocolCodecs.SIZE), (spawner, radius) -> {
-                spawner.spawnRadius = radius;
-            }, spawner -> spawner.spawnRadius).add()
-            .append(new KeyedCodec<>("SpawnInterval", ProtocolCodecs.RANGE), (spawner, minInterval) -> {
-                spawner.spawnIntervalTicks = minInterval;
-            }, spawner -> spawner.spawnIntervalTicks).add()
-            .append(new KeyedCodec<>("MaxSpawnAttempts", Codec.INTEGER), (spawner, attempts) -> {
-                spawner.maxSpawnAttempts = attempts;
-            }, spawner -> spawner.maxSpawnAttempts).add()
-            .append(new KeyedCodec<>("LastGameTick", Codec.INSTANT), (spawner, lastTick) -> {
-                spawner.lastSpawnGameTick = lastTick;
-            }, spawner -> spawner.lastSpawnGameTick).add()
-            .append(new KeyedCodec<>("CurrentSpawnIntervalTicks", Codec.INTEGER), (spawner, currentInterval) -> {
-                spawner.currentSpawnIntervalTicks = currentInterval;
-            }, spawner -> spawner.currentSpawnIntervalTicks).add()
-            .append(new KeyedCodec<>("PreviewEntityUUID", Codec.UUID_BINARY), (spawner, uuid) -> {
-                spawner.previewEntityUUID = uuid;
-            }, spawner -> spawner.previewEntityUUID).add()
+            .append(new KeyedCodec<>("SpawnType", Codec.STRING),
+                    (spawner, type) -> spawner.spawnType = type,
+                    spawner -> spawner.spawnType).add()
+            .append(new KeyedCodec<>("SpawnCount", ProtocolCodecs.RANGE),
+                    (spawner, count) -> spawner.spawnCount = count,
+                    spawner -> spawner.spawnCount).add()
+            .append(new KeyedCodec<>("SpawnRadius", ProtocolCodecs.SIZE),
+                    (spawner, radius) -> spawner.spawnRadius = radius,
+                    spawner -> spawner.spawnRadius).add()
+            .append(new KeyedCodec<>("SpawnInterval", ProtocolCodecs.RANGE),
+                    (spawner, minInterval) -> spawner.spawnIntervalTicks = minInterval, spawner -> spawner.spawnIntervalTicks).add()
+            .append(new KeyedCodec<>("MaxSpawnAttempts", Codec.INTEGER),
+                    (spawner, attempts) -> spawner.maxSpawnAttempts = attempts,
+                    spawner -> spawner.maxSpawnAttempts).add()
+            .append(new KeyedCodec<>("LastGameTick", Codec.INSTANT),
+                    (spawner, lastTick) -> spawner.lastSpawnGameTick = lastTick,
+                    spawner -> spawner.lastSpawnGameTick).add()
+            .append(new KeyedCodec<>("CurrentSpawnIntervalTicks", Codec.INTEGER),
+                    (spawner, currentInterval) -> spawner.currentSpawnIntervalTicks = currentInterval,
+                    spawner -> spawner.currentSpawnIntervalTicks).add()
+            .append(new KeyedCodec<>("PreviewEntityUUID", Codec.UUID_BINARY),
+                    (spawner, uuid) -> spawner.previewEntityUUID = uuid,
+                    spawner -> spawner.previewEntityUUID).add()
             .build();
 
     @Getter
@@ -230,9 +229,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
         Vector3d dropPosition = new Vector3d(worldX + 0.5f, worldY, worldZ + 0.5f);
         Holder<EntityStore>[] itemEntityHolders = ItemComponent.generateItemDrops(store, List.of(getItemStack()), dropPosition, Vector3f.ZERO);
         if (itemEntityHolders.length > 0) {
-            world.execute(() -> {
-                store.addEntities(itemEntityHolders, AddReason.SPAWN);
-            });
+            world.execute(() -> store.addEntities(itemEntityHolders, AddReason.SPAWN));
         }
     }
 
