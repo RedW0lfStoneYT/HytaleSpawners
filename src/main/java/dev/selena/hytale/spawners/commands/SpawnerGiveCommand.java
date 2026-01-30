@@ -80,7 +80,7 @@ public class SpawnerGiveCommand extends AbstractAsyncCommand {
         spawner.setSpawnCount(spawnCountRange);
         spawner.setSpawnIntervalTicks(spawnIntervalRange);
         spawner.setSpawnRadius(spawnRadiusSize);
-        ItemStack spawnerItem = spawner.getItemStack();
+        ItemStack spawnerItem = spawner.getItemStack().withQuantity(amount);
 
         assert spawnerItem != null;
         spawnerItem = spawnerItem.withMetadata("SpawnerType", SpawnerBlock.CODEC, spawner);
