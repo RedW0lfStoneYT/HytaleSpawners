@@ -126,6 +126,8 @@ public class SpawnerBlock implements Component<ChunkStore> {
         newSpawner.spawnIntervalTicks = this.spawnIntervalTicks;
         newSpawner.spawnRadius = this.spawnRadius;
         newSpawner.spawnType = this.spawnType;
+        newSpawner.previewEntity = this.previewEntity;
+        newSpawner.previewEntityUUID = this.previewEntityUUID;
         return newSpawner;
     }
 
