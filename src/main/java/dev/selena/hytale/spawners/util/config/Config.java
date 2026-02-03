@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 import com.hypixel.hytale.protocol.Range;
 import com.hypixel.hytale.protocol.Size;
 import dev.selena.core.config.Comment;
+import dev.selena.hytale.spawners.SpawnerMain;
 import lombok.Getter;
 
 public class Config {
@@ -75,6 +76,6 @@ public class Config {
 
 
     public static Config get() {
-        return Configs.CONFIG.getConfig();
+        return SpawnerMain.get().getConfig();
     }
 }

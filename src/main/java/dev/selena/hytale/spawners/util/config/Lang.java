@@ -2,6 +2,7 @@ package dev.selena.hytale.spawners.util.config;
 
 import com.google.gson.annotations.Expose;
 import dev.selena.core.config.Comment;
+import dev.selena.hytale.spawners.SpawnerMain;
 import lombok.Getter;
 
 public class Lang {
@@ -37,6 +38,6 @@ public class Lang {
     private String spawnerItemLore = "&7Place to spawn &e{spawner_type}&7.";
 
     public static Lang get() {
-        return Configs.LANG.getConfig();
+        return SpawnerMain.get().getLang();
     }
 }

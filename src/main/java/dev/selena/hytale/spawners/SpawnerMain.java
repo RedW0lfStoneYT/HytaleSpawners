@@ -13,6 +13,7 @@ import dev.selena.hytale.spawners.components.NerfedMobComponent;
 import dev.selena.hytale.spawners.systems.SpawnerBlockSystem;
 import dev.selena.hytale.spawners.util.config.Config;
 import dev.selena.hytale.spawners.util.config.Configs;
+import dev.selena.hytale.spawners.util.config.Lang;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,12 +24,18 @@ public class SpawnerMain extends JavaPlugin {
     @Getter
     private ComponentType<EntityStore, DisplayEntityComponent> spawnerEntityComponentType;
     private static SpawnerMain instance;
+    @Getter
+    private Config config;
+    @Getter
+    private Lang lang;
 
     public SpawnerMain(@NotNull JavaPluginInit init) {
         super(init);
         instance = this;
         HytaleCore.setupCore(this);
         HytaleCore.loadAllConfigs(Configs.class);
+        config = Configs.CONFIG.getConfig();
+        lang = Configs.LANG.getConfig();
     }
 
     @Override
