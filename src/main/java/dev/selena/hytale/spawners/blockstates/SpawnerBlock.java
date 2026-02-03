@@ -236,7 +236,10 @@ public class SpawnerBlock implements Component<ChunkStore> {
     }
 
     public ItemStack getItemStack() {
-        return new ItemStack("Spawner").withMetadata("SpawnerType", CODEC, (SpawnerBlock) clone());
+        SpawnerBlock spawnerBlock = (SpawnerBlock) clone();
+        spawnerBlock.previewEntityUUID = null;
+        spawnerBlock.previewEntity = null;
+        return new ItemStack("Spawner").withMetadata("SpawnerType", CODEC, spawnerBlock);
     }
 
     public void updatePreviewEntity(CommandBuffer<ChunkStore> commandBuffer, Vector3i blockPos, boolean removeIfExist) {
