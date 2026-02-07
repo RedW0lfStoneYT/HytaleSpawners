@@ -11,6 +11,13 @@ description = "An easy to use spawner mod for Hytale servers"
 repositories {
     mavenCentral()
     mavenLocal()
+
+
+    // ✅ SelenaDevelopment repo (for downloading HytaleCore)
+    maven {
+        name = "selenaDevelopment"
+        url = uri("https://repo.selenadevelopment.com/releases")
+    }
 }
 
 dependencies {

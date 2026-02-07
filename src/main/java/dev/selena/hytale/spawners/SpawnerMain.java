@@ -11,6 +11,7 @@ import dev.selena.hytale.spawners.commands.SpawnerGiveCommand;
 import dev.selena.hytale.spawners.components.DisplayEntityComponent;
 import dev.selena.hytale.spawners.components.NerfedMobComponent;
 import dev.selena.hytale.spawners.systems.SpawnerBlockSystem;
+import dev.selena.hytale.spawners.systems.SpawnerChunkWakeSystem;
 import dev.selena.hytale.spawners.util.config.Config;
 import dev.selena.hytale.spawners.util.config.Configs;
 import dev.selena.hytale.spawners.util.config.Lang;
@@ -41,19 +42,76 @@ public class SpawnerMain extends JavaPlugin {
     @Override
     protected void setup() {
 
-        this.spawnerBlockComponentType = getChunkStoreRegistry().registerComponent(SpawnerBlock.class, "Spawner", SpawnerBlock.CODEC);
-        this.spawnerEntityComponentType = getEntityStoreRegistry().registerComponent(DisplayEntityComponent.class, "DisplayEntity", DisplayEntityComponent.CODEC);
-        NerfedMobComponent.setComponentType(getEntityStoreRegistry().registerComponent(NerfedMobComponent.class, "NerfedMob", NerfedMobComponent.CODEC));
-        getEntityStoreRegistry().registerSystem(new SpawnerBlockSystem.SpawnerPlaceSystem());
-        if (Config.get().isRotatePreviewEntity())
-            getEntityStoreRegistry().registerSystem(new SpawnerBlockSystem.PreviewRotating());
-        getChunkStoreRegistry().registerSystem(new SpawnerBlockSystem.Ticking());
-        getChunkStoreRegistry().registerSystem(new SpawnerBlockSystem.OnSpawnerBlockAdd());
-        getEntityStoreRegistry().registerSystem(new SpawnerBlockSystem.NerfedMobDeath());
-        getCommandRegistry().registerCommand(new SpawnerGiveCommand());
+        // =====================================================
+        // ✅ REGISTER COMPONENTS
+        // =====================================================
 
+        this.spawnerBlockComponentType =
+                getChunkStoreRegistry().registerComponent(
+                        SpawnerBlock.class,
+                        "Spawner",
+                        SpawnerBlock.CODEC
+                );
+
+        this.spawnerEntityComponentType =
+                getEntityStoreRegistry().registerComponent(
+                        DisplayEntityComponent.class,
+                        "DisplayEntity",
+                        DisplayEntityComponent.CODEC
+                );
+
+        NerfedMobComponent.setComponentType(
+                getEntityStoreRegistry().registerComponent(
+                        NerfedMobComponent.class,
+                        "NerfedMob",
+                        NerfedMobComponent.CODEC
+                )
+        );
+
+        // =====================================================
+        // ✅ REGISTER SYSTEMS
+        // =====================================================
+
+        // Spawner placement
+        getEntityStoreRegistry().registerSystem(
+                new SpawnerBlockSystem.SpawnerPlaceSystem()
+        );
+
+        // ✅ NEW: Chunk wake system (reactivates spawners when player enters chunk)
+        getEntityStoreRegistry().registerSystem(
+                new SpawnerChunkWakeSystem()
+        );
+
+        // Preview rotation
+        if (Config.get().isRotatePreviewEntity()) {
+            getEntityStoreRegistry().registerSystem(
+                    new SpawnerBlockSystem.PreviewRotating()
+            );
+        }
+
+        // Main ticking logic (ChunkStore)
+        getChunkStoreRegistry().registerSystem(
+                new SpawnerBlockSystem.Ticking()
+        );
+
+        // Spawner load/init
+        getChunkStoreRegistry().registerSystem(
+                new SpawnerBlockSystem.OnSpawnerBlockAdd()
+        );
+
+        // Nerfed mob drops
+        getEntityStoreRegistry().registerSystem(
+                new SpawnerBlockSystem.NerfedMobDeath()
+        );
+
+        // =====================================================
+        // ✅ COMMANDS
+        // =====================================================
+
+        getCommandRegistry().registerCommand(
+                new SpawnerGiveCommand()
+        );
     }
-
 
     public static SpawnerMain get() {
         return instance;
