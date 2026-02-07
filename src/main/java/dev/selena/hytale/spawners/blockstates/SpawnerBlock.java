@@ -41,8 +41,6 @@ import it.unimi.dsi.fastutil.Pair;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
-
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -65,9 +63,9 @@ public class SpawnerBlock implements Component<ChunkStore> {
             .append(new KeyedCodec<>("MaxSpawnAttempts", Codec.INTEGER),
                     (spawner, attempts) -> spawner.maxSpawnAttempts = attempts,
                     spawner -> spawner.maxSpawnAttempts).add()
-            .append(new KeyedCodec<>("LastGameTick", Codec.INSTANT),
-                    (spawner, lastTick) -> spawner.lastSpawnGameTick = lastTick,
-                    spawner -> spawner.lastSpawnGameTick).add()
+            .append(new KeyedCodec<>("LastSpawnTick", Codec.LONG),
+                    (spawner, tick) -> spawner.lastSpawnTick = tick,
+                    spawner -> spawner.lastSpawnTick).add()
             .append(new KeyedCodec<>("CurrentSpawnIntervalTicks", Codec.INTEGER),
                     (spawner, currentInterval) -> spawner.currentSpawnIntervalTicks = currentInterval,
                     spawner -> spawner.currentSpawnIntervalTicks).add()
@@ -93,7 +91,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
     private int maxSpawnAttempts;
     @Getter
     @Setter
-    private Instant lastSpawnGameTick;
+    private long lastSpawnTick;
     @Getter
     @Setter
     private int currentSpawnIntervalTicks;
@@ -102,6 +100,11 @@ public class SpawnerBlock implements Component<ChunkStore> {
     private UUID previewEntityUUID;
     @Getter
     private Ref<EntityStore> previewEntity;
+
+    @Getter
+    @Setter
+    private boolean sleeping = false;
+
     private final Random random = new Random();
 
 
@@ -113,21 +116,38 @@ public class SpawnerBlock implements Component<ChunkStore> {
         this.spawnType = type;
         this.spawnCount = Config.get().getSpawnRange();
         this.spawnRadius = Config.get().getSpawnRadius();
-        this.spawnIntervalTicks = Config.get().getSpawnRange();
+
+
+        // ✅ Correct tick interval
+        this.spawnIntervalTicks = Config.get().getSpawnTicksRange();
+
+
         this.maxSpawnAttempts = Config.get().getMaxSpawnAttempts();
+
+        this.lastSpawnTick = 0;
+        this.currentSpawnIntervalTicks = random.nextInt(200, 401);
     }
 
     @Nullable
     @Override
     public Component<ChunkStore> clone() {
         SpawnerBlock newSpawner = new SpawnerBlock();
+
         newSpawner.maxSpawnAttempts = this.maxSpawnAttempts;
         newSpawner.spawnCount = this.spawnCount;
         newSpawner.spawnIntervalTicks = this.spawnIntervalTicks;
         newSpawner.spawnRadius = this.spawnRadius;
         newSpawner.spawnType = this.spawnType;
+
+        newSpawner.lastSpawnTick = this.lastSpawnTick;
+        newSpawner.currentSpawnIntervalTicks = this.currentSpawnIntervalTicks;
+
         newSpawner.previewEntity = this.previewEntity;
         newSpawner.previewEntityUUID = this.previewEntityUUID;
+
+        // ✅ COPY SLEEP STATE
+        newSpawner.sleeping = this.sleeping;
+
         return newSpawner;
     }
 
@@ -139,13 +159,19 @@ public class SpawnerBlock implements Component<ChunkStore> {
                 ", spawnRadius=" + spawnRadius +
                 ", spawnIntervalTicks=" + spawnIntervalTicks +
                 ", maxSpawnAttempts=" + maxSpawnAttempts +
-                ", lastSpawnGameTick=" + lastSpawnGameTick +
+                ", lastSpawnTick=" + lastSpawnTick +
                 ", currentSpawnIntervalTicks=" + currentSpawnIntervalTicks +
                 '}';
     }
 
     public void setSpawnInterval() {
-        this.currentSpawnIntervalTicks = random.nextInt(spawnIntervalTicks.min, spawnIntervalTicks.max + 1);
+
+        // ✅ Random between config min/max ticks
+        this.currentSpawnIntervalTicks =
+                random.nextInt(
+                        spawnIntervalTicks.min,
+                        spawnIntervalTicks.max + 1
+                );
     }
 
     public SpawnerSpawnAttemptReturn trySpawn(World world, int blockX, int blockY, int blockZ, String type, int max) {
@@ -237,9 +263,17 @@ public class SpawnerBlock implements Component<ChunkStore> {
 
     public ItemStack getItemStack() {
         SpawnerBlock spawnerBlock = (SpawnerBlock) clone();
+
+        spawnerBlock.sleeping = false;
+
         spawnerBlock.previewEntityUUID = null;
         spawnerBlock.previewEntity = null;
-        return new ItemStack("Spawner").withMetadata("SpawnerType", CODEC, spawnerBlock);
+
+        spawnerBlock.lastSpawnTick = 0;
+        spawnerBlock.currentSpawnIntervalTicks = 0;
+
+        return new ItemStack("Spawner")
+                .withMetadata("SpawnerType", CODEC, spawnerBlock);
     }
 
     public void updatePreviewEntity(CommandBuffer<ChunkStore> commandBuffer, Vector3i blockPos, boolean removeIfExist) {

@@ -9,7 +9,10 @@ import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.Range;
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktick.BlockTickStrategy;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
@@ -43,6 +46,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
+import java.awt.*;
 import java.util.List;
 
 public class SpawnerBlockSystem {
@@ -90,6 +94,86 @@ public class SpawnerBlockSystem {
             }
             spawner.setSpawnType(spawnerPlaceEvent.getSpawnType());
             blockEntity.replaceComponent(SpawnerMain.get().getSpawnerBlockComponentType(), spawner);
+
+            final int MAX_SPAWNERS_PER_CHUNK = 20;
+
+            Vector3i pos = placeBlockEvent.getTargetBlock();
+
+            Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
+
+            Ref<ChunkStore> chunkRef =
+                    world.getChunkStore().getChunkReference(
+                            ChunkUtil.indexChunkFromBlock(pos.x, pos.z)
+                    );
+
+            if (chunkRef == null) {
+                placeBlockEvent.setCancelled(true);
+                return;
+            }
+
+
+            BlockComponentChunk blockComponentChunk =
+                    chunkStore.getComponent(
+                            chunkRef,
+                            BlockComponentChunk.getComponentType()
+                    );
+
+            if (blockComponentChunk == null) {
+                placeBlockEvent.setCancelled(true);
+                return;
+            }
+
+            int spawnerCount = 0;
+
+            final int CHUNK_SIZE = 32;
+            final int WORLD_HEIGHT = 320;
+
+            for (int y = 0; y < WORLD_HEIGHT; y++) {
+                for (int z = 0; z < CHUNK_SIZE; z++) {
+                    for (int x = 0; x < CHUNK_SIZE; x++) {
+
+                        int blockIndex = ChunkUtil.indexBlockInColumn(x, y, z);
+
+                        Ref<ChunkStore> blockRef =
+                                blockComponentChunk.getEntityReference(blockIndex);
+
+                        if (blockRef == null || !blockRef.isValid()) continue;
+
+                        SpawnerBlock existing =
+                                chunkStore.getComponent(
+                                        blockRef,
+                                        SpawnerMain.get().getSpawnerBlockComponentType()
+                                );
+
+                        if (existing != null) {
+                            spawnerCount++;
+
+                            if (spawnerCount >= MAX_SPAWNERS_PER_CHUNK) {
+
+                                placeBlockEvent.setCancelled(true);
+
+                                PlayerRef player = archetypeChunk.getComponent(i, PlayerRef.getComponentType());
+                                if (player != null) {
+                                    player.sendMessage(
+                                            Message.raw("Chunk limit reached: ")
+                                                    .color("red")
+                                                    .bold(true)
+                                                    .insert(
+                                                            Message.raw(MAX_SPAWNERS_PER_CHUNK + " Spawners")
+                                                                    .color(Color.RED)
+                                                                    .bold(true)
+                                                    )
+                                    );
+                                }
+
+
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
             world.getChunkStore().getStore().addEntity(blockEntity, AddReason.SPAWN);
 
         }
@@ -104,49 +188,68 @@ public class SpawnerBlockSystem {
     public static class OnSpawnerBlockAdd extends RefSystem<ChunkStore> {
 
         @Override
-        public void onEntityAdded(@NotNull Ref<ChunkStore> ref, @NotNull AddReason addReason, @NotNull Store<ChunkStore> store, @NotNull CommandBuffer<ChunkStore> commandBuffer) {
+        public void onEntityAdded(
+                @NotNull Ref<ChunkStore> ref,
+                @NotNull AddReason addReason,
+                @NotNull Store<ChunkStore> store,
+                @NotNull CommandBuffer<ChunkStore> commandBuffer
+        ) {
             if (addReason != AddReason.SPAWN) {
                 return;
             }
-            SpawnerBlock spawnerBlock = commandBuffer.getComponent(ref, SpawnerMain.get().getSpawnerBlockComponentType());
+
+            SpawnerBlock spawnerBlock =
+                    commandBuffer.getComponent(ref, SpawnerMain.get().getSpawnerBlockComponentType());
             if (spawnerBlock == null) {
                 return;
             }
 
-            BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
+            BlockModule.BlockStateInfo info =
+                    commandBuffer.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
             if (info == null) {
                 return;
             }
-            BlockChunk blockChunk = commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
+
+            BlockChunk blockChunk =
+                    commandBuffer.getComponent(info.getChunkRef(), BlockChunk.getComponentType());
             if (blockChunk == null) {
                 return;
             }
-            if (spawnerBlock.getLastSpawnGameTick() == null) {
-                spawnerBlock.setLastSpawnGameTick(store.getExternalData().getWorld().getEntityStore().getStore().getResource(WorldTimeResource.getResourceType()).getGameTime());
+
+            boolean changed = false;
+
+            Range ticks = spawnerBlock.getSpawnIntervalTicks();
+
+            if (ticks == null || ticks.max <= 10) {
+
+                System.out.println(
+                        "[Spawner] Migrating old spawner interval at block index="
+                                + info.getIndex()
+                                + " old=" + ticks
+                );
+
+                spawnerBlock.setSpawnIntervalTicks(Config.get().getSpawnTicksRange());
+
+                spawnerBlock.setLastSpawnTick(0);
+
                 spawnerBlock.setSpawnInterval();
+
+                changed = true;
+            }
+
+            if (spawnerBlock.getCurrentSpawnIntervalTicks() <= 0) {
+                spawnerBlock.setSpawnInterval();   // random delay
+                changed = true;
+            }
+
+            if (spawnerBlock.getLastSpawnTick() < 0) {
+                spawnerBlock.setLastSpawnTick(0);
+                changed = true;
+            }
+
+            if (changed) {
                 blockChunk.markNeedsSaving();
             }
-
-            int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-            int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-            int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
-            BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(info.getChunkRef(), BlockComponentChunk.getComponentType());
-            if (blockComponentChunk == null) {
-                throw new AssertionError();
-            }
-            ChunkColumn column = commandBuffer.getComponent(info.getChunkRef(), ChunkColumn.getComponentType());
-            if (column == null) {
-                throw new AssertionError();
-            }
-            Ref<ChunkStore> section = column.getSection(ChunkUtil.chunkCoordinate(y));
-            if (section == null) {
-                throw new AssertionError();
-            }
-            BlockSection blockSection = commandBuffer.getComponent(section, BlockSection.getComponentType());
-
-            spawnerBlock.setSpawnInterval();
-            SpawnerUtil.tickSpawnerBlock(commandBuffer, blockChunk, blockSection, section, ref, spawnerBlock, x, y, z, true);
-
         }
 
         @Override
@@ -231,43 +334,131 @@ public class SpawnerBlockSystem {
 
 
         @Override
-        public void tick(float dt, int index, @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk, @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
-            BlockSection blocks = archetypeChunk.getComponent(index, BlockSection.getComponentType());
+        public void tick(
+                float dt,
+                int index,
+                @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
+                @Nonnull Store<ChunkStore> store,
+                @Nonnull CommandBuffer<ChunkStore> commandBuffer
+        ) {
+
+            World world = store.getExternalData().getWorld();
+
+            BlockSection blocks =
+                    archetypeChunk.getComponent(index, BlockSection.getComponentType());
+
             if (blocks == null) {
                 throw new AssertionError();
             }
+
             if (blocks.getTickingBlocksCountCopy() == 0) {
                 return;
             }
-            ChunkSection section = archetypeChunk.getComponent(index, ChunkSection.getComponentType());
+
+            ChunkSection section =
+                    archetypeChunk.getComponent(index, ChunkSection.getComponentType());
+
             if (section == null) {
                 throw new AssertionError();
             }
-            if (section.getChunkColumnReference() == null || !section.getChunkColumnReference().isValid()) {
+
+            if (section.getChunkColumnReference() == null
+                    || !section.getChunkColumnReference().isValid()) {
                 return;
             }
-            BlockComponentChunk blockComponentChunk = commandBuffer.getComponent(section.getChunkColumnReference(), BlockComponentChunk.getComponentType());
+
+            BlockComponentChunk blockComponentChunk =
+                    commandBuffer.getComponent(
+                            section.getChunkColumnReference(),
+                            BlockComponentChunk.getComponentType()
+                    );
+
             if (blockComponentChunk == null) {
                 throw new AssertionError();
             }
-            Ref<ChunkStore> ref = archetypeChunk.getReferenceTo(index);
-            BlockChunk blockChunk = commandBuffer.getComponent(section.getChunkColumnReference(), BlockChunk.getComponentType());
+
+            Ref<ChunkStore> ref =
+                    archetypeChunk.getReferenceTo(index);
+
+            BlockChunk blockChunk =
+                    commandBuffer.getComponent(
+                            section.getChunkColumnReference(),
+                            BlockChunk.getComponentType()
+                    );
+
             if (blockChunk == null) {
                 throw new AssertionError();
             }
-            blocks.forEachTicking(blockComponentChunk, commandBuffer, section.getY(), (blockComponentChunk1, commandBuffer1, localX, localY, localZ, blockId) -> {
-                Ref<ChunkStore> blockRef = blockComponentChunk1.getEntityReference(ChunkUtil.indexBlockInColumn(localX, localY, localZ));
-                if (blockRef == null) {
-                    return BlockTickStrategy.IGNORED;
-                }
-                SpawnerBlock spawner = commandBuffer1.getComponent(blockRef, SpawnerMain.get().getSpawnerBlockComponentType());
-                if (spawner != null) {
-                    SpawnerUtil.tickSpawnerBlock(commandBuffer1, blockChunk, blocks, ref, blockRef, spawner, localX, localY, localZ, false);
-                    return BlockTickStrategy.CONTINUE;
-                }
-                return BlockTickStrategy.IGNORED;
-            });
 
+            blocks.forEachTicking(
+                    blockComponentChunk,
+                    commandBuffer,
+                    section.getY(),
+                    (blockComponentChunk1, commandBuffer1,
+                     localX, localY, localZ, blockId) -> {
+
+                        Ref<ChunkStore> blockRef =
+                                blockComponentChunk1.getEntityReference(
+                                        ChunkUtil.indexBlockInColumn(localX, localY, localZ)
+                                );
+
+                        if (blockRef == null) {
+                            return BlockTickStrategy.IGNORED;
+                        }
+
+                        SpawnerBlock spawner =
+                                commandBuffer1.getComponent(
+                                        blockRef,
+                                        SpawnerMain.get().getSpawnerBlockComponentType()
+                                );
+
+                        if (spawner == null) {
+                            return BlockTickStrategy.IGNORED;
+                        }
+
+                        int worldX =
+                                ChunkUtil.worldCoordFromLocalCoord(section.getX(), localX);
+
+                        int worldY =
+                                ChunkUtil.worldCoordFromLocalCoord(section.getY(), localY);
+
+                        int worldZ =
+                                ChunkUtil.worldCoordFromLocalCoord(section.getZ(), localZ);
+
+                        boolean nearby =
+                                SpawnerUtil.isPlayerNearby(world, worldX, worldY, worldZ, 16);
+
+                        if (spawner.isSleeping()) {
+
+                            if (!nearby) {
+                                return BlockTickStrategy.CONTINUE;
+                            }
+
+                            spawner.setSleeping(false);
+                            spawner.setSpawnInterval();
+                        }
+
+                        if (!nearby) {
+                            spawner.setSleeping(true);
+                            return BlockTickStrategy.CONTINUE;
+                        }
+
+                        SpawnerUtil.tickSpawnerBlock(
+                                commandBuffer1,
+                                blockChunk,
+                                blocks,
+                                ref,
+                                blockRef,
+                                spawner,
+                                localX,
+                                localY,
+                                localZ,
+                                false
+                        );
+
+                        return BlockTickStrategy.CONTINUE;
+                    }
+            );
         }
 
         @Nullable
@@ -311,9 +502,6 @@ public class SpawnerBlockSystem {
                 Holder<EntityStore>[] drops = ItemComponent.generateItemDrops(store, itemsToDrop, dropPosition, headRotation.clone());
                 commandBuffer.addEntities(drops, AddReason.SPAWN);
             }
-
-
-
         }
 
         @Override
