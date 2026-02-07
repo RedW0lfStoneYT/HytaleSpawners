@@ -118,7 +118,6 @@ public class SpawnerBlock implements Component<ChunkStore> {
         this.spawnRadius = Config.get().getSpawnRadius();
 
 
-        // ✅ Correct tick interval
         this.spawnIntervalTicks = Config.get().getSpawnTicksRange();
 
 
@@ -145,7 +144,6 @@ public class SpawnerBlock implements Component<ChunkStore> {
         newSpawner.previewEntity = this.previewEntity;
         newSpawner.previewEntityUUID = this.previewEntityUUID;
 
-        // ✅ COPY SLEEP STATE
         newSpawner.sleeping = this.sleeping;
 
         return newSpawner;
@@ -166,7 +164,6 @@ public class SpawnerBlock implements Component<ChunkStore> {
 
     public void setSpawnInterval() {
 
-        // ✅ Random between config min/max ticks
         this.currentSpawnIntervalTicks =
                 random.nextInt(
                         spawnIntervalTicks.min,
