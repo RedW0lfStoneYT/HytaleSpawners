@@ -29,13 +29,13 @@ public class Lang {
 
     @Getter
     @Expose
-    @Comment("The name format of the spawner item - NOT SUPPORTED YET - FUTURE PLANS")
-    private String spawnerItemName = "&6{spawner_type} Spawner";
+    @Comment("The name format of the spawner item")
+    private String spawnerItemName = "{spawner_type} Spawner";
 
     @Getter
     @Expose
-    @Comment("The lore format of the spawner item - NOT SUPPORTED YET - FUTURE PLANS")
-    private String spawnerItemLore = "&7Place to spawn &e{spawner_type}&7.";
+    @Comment("The lore format of the spawner item")
+    private String spawnerItemLore = "<color is=\"#AAAAAA\">Place to spawn <color is=\"#FFFF55\">{spawner_type}</color>s around the spawner.</color>";
 
     public static Lang get() {
         return SpawnerMain.get().getLang();

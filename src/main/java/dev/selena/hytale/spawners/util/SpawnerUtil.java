@@ -97,4 +97,16 @@ public class SpawnerUtil {
         });
 
     }
+    @Nullable
+    public static String extractStringValue(@Nonnull String metadata, @Nonnull String key) {
+        try {
+            BsonDocument doc = BsonDocument.parse(metadata);
+            BsonValue value = doc.get(key);
+            if (value != null && value.isString()) {
+                return value.asString().getValue();
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
 }

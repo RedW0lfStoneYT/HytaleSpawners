@@ -33,6 +33,7 @@ import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.systems.RoleChangeSystem;
 import com.hypixel.hytale.server.spawning.ISpawnableWithModel;
 import com.hypixel.hytale.server.spawning.SpawningContext;
+import dev.selena.core.util.PlaceholderUtil;
 import dev.selena.hytale.spawners.SpawnerMain;
 import dev.selena.hytale.spawners.components.NerfedMobComponent;
 import dev.selena.hytale.spawners.util.config.Config;
@@ -40,6 +41,8 @@ import dev.selena.hytale.spawners.util.objects.SpawnerSpawnAttemptReturn;
 import it.unimi.dsi.fastutil.Pair;
 import lombok.Getter;
 import lombok.Setter;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -133,7 +136,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
 
     @Override
     public String toString() {
-        return "SpawnerBlockState{" +
+        return "SpawnerBlock{" +
                 "spawnType='" + spawnType + '\'' +
                 ", spawnCount=" + spawnCount +
                 ", spawnRadius=" + spawnRadius +
@@ -141,6 +144,9 @@ public class SpawnerBlock implements Component<ChunkStore> {
                 ", maxSpawnAttempts=" + maxSpawnAttempts +
                 ", lastSpawnGameTick=" + lastSpawnGameTick +
                 ", currentSpawnIntervalTicks=" + currentSpawnIntervalTicks +
+                ", previewEntityUUID=" + previewEntityUUID +
+                ", previewEntity=" + previewEntity +
+                ", random=" + random +
                 '}';
     }
 
@@ -241,7 +247,13 @@ public class SpawnerBlock implements Component<ChunkStore> {
         SpawnerBlock spawnerBlock = (SpawnerBlock) clone();
         spawnerBlock.previewEntityUUID = null;
         spawnerBlock.previewEntity = null;
-        return new ItemStack("Spawner").withMetadata("SpawnerType", CODEC, spawnerBlock);
+        ItemStack vanillaItem = new ItemStack("Spawner").withMetadata("SpawnerType", CODEC, spawnerBlock);
+        BsonDocument metaData = vanillaItem.getMetadata();
+        metaData.put("rename", new BsonString(PlaceholderUtil.parsePlaceholders(Lang.get().getSpawnerItemName(), "{spawner_type}", spawnType)));
+        metaData.put("tooltip_desc", new BsonString(PlaceholderUtil.parsePlaceholders(Lang.get().getSpawnerItemLore(), "{spawner_type}", spawnType)));
+        metaData.remove("tooltip_lines");
+
+        return vanillaItem.withMetadata(metaData);
     }
 
     public void updatePreviewEntity(CommandBuffer<ChunkStore> commandBuffer, Vector3i blockPos, boolean removeIfExist) {
