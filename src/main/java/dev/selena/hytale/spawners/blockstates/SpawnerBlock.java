@@ -26,6 +26,7 @@ import com.hypixel.hytale.server.core.modules.entity.tracker.NetworkId;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.TargetUtil;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
@@ -37,6 +38,7 @@ import dev.selena.core.util.PlaceholderUtil;
 import dev.selena.hytale.spawners.SpawnerMain;
 import dev.selena.hytale.spawners.components.NerfedMobComponent;
 import dev.selena.hytale.spawners.util.config.Config;
+import dev.selena.hytale.spawners.util.config.Lang;
 import dev.selena.hytale.spawners.util.objects.SpawnerSpawnAttemptReturn;
 import it.unimi.dsi.fastutil.Pair;
 import lombok.Getter;
@@ -266,6 +268,9 @@ public class SpawnerBlock implements Component<ChunkStore> {
             previewEntity = commandBuffer.getExternalData().getWorld().getEntityStore().getRefFromUUID(previewEntityUUID);
         }
         if (previewEntity != null && !previewEntity.isValid()) {
+            TargetUtil.getAllEntitiesInBox(blockPos.toVector3d().add(-0.5, -0.5, -0.5),
+                    blockPos.toVector3d().add(0.5, 0.5, 0.5), entityStore)
+                    .forEach(entityStoreRef -> entityStore.removeEntity(entityStoreRef, RemoveReason.REMOVE));
             previewEntity = null;
             previewEntityUUID = null;
         }

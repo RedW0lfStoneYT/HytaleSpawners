@@ -14,8 +14,15 @@ import dev.selena.hytale.spawners.systems.SpawnerBlockSystem;
 import dev.selena.hytale.spawners.util.config.Config;
 import dev.selena.hytale.spawners.util.config.Configs;
 import dev.selena.hytale.spawners.util.config.Lang;
+import dev.selena.hytale.spawners.util.dynamictooltips.providers.CustomTooltipProvider;
+import dev.selena.hytale.spawners.util.dynamictooltips.providers.RenameTooltipProvider;
 import lombok.Getter;
+import org.herolias.tooltips.DynamicTooltipsLib;
+import org.herolias.tooltips.api.DynamicTooltipsApi;
+import org.herolias.tooltips.api.DynamicTooltipsApiProvider;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.logging.Level;
 
 public class SpawnerMain extends JavaPlugin {
 
@@ -28,6 +35,8 @@ public class SpawnerMain extends JavaPlugin {
     private Config config;
     @Getter
     private Lang lang;
+    @Getter
+    private DynamicTooltipsApi tooltipsApi;
 
     public SpawnerMain(@NotNull JavaPluginInit init) {
         super(init);
@@ -40,6 +49,14 @@ public class SpawnerMain extends JavaPlugin {
 
     @Override
     protected void setup() {
+        new DynamicTooltipsLib(this).setup();
+        tooltipsApi = DynamicTooltipsApiProvider.get();
+        if (tooltipsApi == null) {
+            getLogger().at(Level.SEVERE).log("DynamicTooltipsLib API not available! Is the library installed?");
+            return;
+        }
+        tooltipsApi.registerProvider(new RenameTooltipProvider());
+        tooltipsApi.registerProvider(new CustomTooltipProvider());
 
         this.spawnerBlockComponentType = getChunkStoreRegistry().registerComponent(SpawnerBlock.class, "Spawner", SpawnerBlock.CODEC);
         this.spawnerEntityComponentType = getEntityStoreRegistry().registerComponent(DisplayEntityComponent.class, "DisplayEntity", DisplayEntityComponent.CODEC);
