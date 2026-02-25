@@ -47,6 +47,7 @@ public class SpawnerGiveCommand extends AbstractAsyncCommand {
         spawnIntervalArg = this.withDefaultArg("spawnInterval", "the interval at which the spawner will spawn entities", ArgTypes.INT_RANGE, Pair.of(spawnInterval.min, spawnInterval.max), "200-400 by default");
         Size spawnRadius = Config.get().getSpawnRadius();
         spawnRadiusArg = this.withDefaultArg("spawnRadius", "the radius in which the spawner will spawn entities", ArgTypes.INT_RANGE, Pair.of(spawnRadius.width, spawnRadius.height), "3x3 by default");
+        addSubCommand(new SpawnerShowDebugCommand());
     }
 
     @NotNull

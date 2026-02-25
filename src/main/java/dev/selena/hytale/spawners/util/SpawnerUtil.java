@@ -3,6 +3,7 @@ package dev.selena.hytale.spawners.util;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -11,17 +12,23 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
+import dev.selena.hytale.spawners.SpawnerMain;
 import dev.selena.hytale.spawners.blockstates.SpawnerBlock;
 import dev.selena.hytale.spawners.events.SpawnerSpawnEvent;
 import dev.selena.hytale.spawners.util.config.Config;
 import dev.selena.hytale.spawners.util.objects.SpawnerSpawnAttemptReturn;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -108,5 +115,16 @@ public class SpawnerUtil {
         } catch (Exception ignored) {
         }
         return null;
+    }
+
+    public static SpawnerBlock getSpawnerAtLocation(Vector3i position, World world) {
+        WorldChunk worldChunk = world.getChunk(ChunkUtil.indexChunkFromBlock(position.x, position.z));
+        assert worldChunk != null;
+        Ref<ChunkStore> blockRef = worldChunk.getBlockComponentEntity(position.x, position.y, position.z);
+        if (blockRef == null || !blockRef.isValid()) {
+            return null;
+        }
+        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
+        return chunkStore.getComponent(blockRef, SpawnerMain.get().getSpawnerBlockComponentType());
     }
 }
