@@ -74,6 +74,11 @@ public class Config {
     @Comment("How long should the spawned mobs last before despawning (in seconds), -1 to disable")
     private float spawnedMobDespawnTimeSeconds = 300;
 
+    @Getter
+    @Expose
+    @Comment("Should the spawner drop when mined")
+    private boolean dropSpawnerWhenMined = true;
+
 
     public static Config get() {
         return SpawnerMain.get().getConfig();

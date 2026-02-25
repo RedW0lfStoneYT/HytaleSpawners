@@ -5,17 +5,21 @@ plugins {
 }
 
 group = 'dev.selena'
-version = '1.2.3'
+version = '1.3.0'
 description = "An easy to use spawner mod for Hytale servers"
 
 repositories {
     mavenCentral()
     mavenLocal()
+    maven {
+        name = "hytale-release"
+        url = uri("https://maven.hytale.com/release")
+    }
 }
 
 dependencies {
-    compileOnly(files("libs/HytaleServer.jar"))
 
+    compileOnly 'com.hypixel.hytale:Server:+'
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("org.jetbrains:annotations:24.1.0")
     compileOnly 'org.projectlombok:lombok:1.18.40'
@@ -24,6 +28,8 @@ dependencies {
 
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+//    compileOnly files("libs/DynamicTooltipsLib-1.5.0.jar")
+    implementation("dev.selena.DynamicTooltips:DynamicTooltipsLib:1.0")
 }
 
 // Configure Java compilation

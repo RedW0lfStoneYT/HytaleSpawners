@@ -228,6 +228,8 @@ public class SpawnerBlock implements Component<ChunkStore> {
 
 
     public void handleBlockBroken(World world, Store<EntityStore> store, int worldX, int worldY, int worldZ) {
+        if (!Config.get().isDropSpawnerWhenMined())
+            return;
         Vector3d dropPosition = new Vector3d(worldX + 0.5f, worldY, worldZ + 0.5f);
         Holder<EntityStore>[] itemEntityHolders = ItemComponent.generateItemDrops(store, List.of(getItemStack()), dropPosition, Vector3f.ZERO);
         if (itemEntityHolders.length > 0) {
