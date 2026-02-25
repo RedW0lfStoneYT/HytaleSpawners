@@ -47,15 +47,15 @@ public class SpawnerUtil {
 
             AtomicInteger nearbyNPCCount = new AtomicInteger();
             if (Config.get().isCheckNearbyEntities()) {
-                Size spawnRadius = Config.get().getSpawnRadius();
-                int width = spawnRadius.width;
-                int height = spawnRadius.height;
+                Size checkRadius = Config.get().getNearbyEntitiesCheckRadius();
+                int width = checkRadius.width;
+                int height = checkRadius.height;
 
                 ComponentType<EntityStore, NPCEntity> npcComponentType = NPCEntity.getComponentType();
 
                 TargetUtil.getAllEntitiesInBox(
-                        new Vector3d(worldX - (width + 1), worldY - (height + 1), worldZ - (width + 1)),
-                        new Vector3d(worldX + (width + 1), worldY + (height + 1), worldZ + (width + 1)),
+                        new Vector3d(worldX - (width + 1.5), worldY - (height + 1.5), worldZ - (width + 1.5)),
+                        new Vector3d(worldX + (width + 1.5), worldY + (height + 1.5), worldZ + (width + 1.5)),
                         world.getEntityStore().getStore()
                 ).forEach(entityRef -> {
                     if (entityRef == null || !entityRef.isValid()) {
