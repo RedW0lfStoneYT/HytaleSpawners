@@ -251,8 +251,12 @@ public class SpawnerBlock implements Component<ChunkStore> {
         spawnerBlock.previewEntity = null;
         ItemStack vanillaItem = new ItemStack("Spawner").withMetadata("SpawnerType", CODEC, spawnerBlock);
         BsonDocument metaData = vanillaItem.getMetadata();
-        metaData.put("rename", new BsonString(PlaceholderUtil.parsePlaceholders(Lang.get().getSpawnerItemName(), "{spawner_type}", spawnType)));
-        metaData.put("tooltip_desc", new BsonString(PlaceholderUtil.parsePlaceholders(Lang.get().getSpawnerItemLore(), "{spawner_type}", spawnType)));
+        metaData.put("rename", new BsonString(PlaceholderUtil.parsePlaceholders(Lang.get().getSpawnerItemName(),
+                "{spawner_type}", spawnType,
+                "{spawner_type_name}", SpawnerUtil.parseName(spawnType))));
+        metaData.put("tooltip_desc", new BsonString(PlaceholderUtil.parsePlaceholders(Lang.get().getSpawnerItemLore(),
+                "{spawner_type}", spawnType,
+                "{spawner_type_name}", SpawnerUtil.parseName(spawnType))));
         metaData.remove("tooltip_lines");
 
         return vanillaItem.withMetadata(metaData);

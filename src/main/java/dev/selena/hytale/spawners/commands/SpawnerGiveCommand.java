@@ -19,6 +19,7 @@ import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.role.Role;
 import dev.selena.core.util.PlaceholderUtil;
 import dev.selena.hytale.spawners.blockstates.SpawnerBlock;
+import dev.selena.hytale.spawners.util.SpawnerUtil;
 import dev.selena.hytale.spawners.util.config.Config;
 import dev.selena.hytale.spawners.util.config.Lang;
 import it.unimi.dsi.fastutil.Pair;
@@ -47,7 +48,6 @@ public class SpawnerGiveCommand extends AbstractAsyncCommand {
         spawnIntervalArg = this.withDefaultArg("spawnInterval", "the interval at which the spawner will spawn entities", ArgTypes.INT_RANGE, Pair.of(spawnInterval.min, spawnInterval.max), "200-400 by default");
         Size spawnRadius = Config.get().getSpawnRadius();
         spawnRadiusArg = this.withDefaultArg("spawnRadius", "the radius in which the spawner will spawn entities", ArgTypes.INT_RANGE, Pair.of(spawnRadius.width, spawnRadius.height), "3x3 by default");
-        addSubCommand(new SpawnerShowDebugCommand());
     }
 
     @NotNull
@@ -95,11 +95,13 @@ public class SpawnerGiveCommand extends AbstractAsyncCommand {
             inventory.addItemStack(finalSpawnerItem);
             commandContext.sender().sendMessage(PlaceholderUtil.parsePlaceholdersToMessage(Lang.get().getSpawnerGiven(),
                     "{spawner_type}", spawnerType,
+                    "{spawner_type_name}", SpawnerUtil.parseName(spawnerType),
                     "{player}", playerRef.getUsername(),
                     "{amount}", String.valueOf(amount)
             ));
             player.sendMessage(PlaceholderUtil.parsePlaceholdersToMessage(Lang.get().getSpawnerReceived(),
                     "{spawner_type}", spawnerType,
+                    "{spawner_type_name}", SpawnerUtil.parseName(spawnerType),
                     "{amount}", String.valueOf(amount)
             ));
         }, world);

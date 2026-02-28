@@ -9,6 +9,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.Size;
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
@@ -30,9 +31,13 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SpawnerUtil {
+
+    private static final HashMap<String, String> cachedNames = new HashMap<>();
+
 
     public static void tickSpawnerBlock(CommandBuffer<ChunkStore> commandBuffer, BlockChunk blockChunk, BlockSection blockSection, Ref<ChunkStore> sectionRef, Ref<ChunkStore> blockRef, SpawnerBlock spawnerBlock, int x, int y, int z, boolean initialTick) {
 
@@ -126,5 +131,24 @@ public class SpawnerUtil {
         }
         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
         return chunkStore.getComponent(blockRef, SpawnerMain.get().getSpawnerBlockComponentType());
+    }
+
+    public static @Nonnull String parseName(@Nonnull String nameRaw) {
+        return cachedNames.computeIfAbsent(nameRaw, key -> {
+            String roleName = Message.translation("server.npcRoles." + nameRaw + ".name").getAnsiMessage();
+            if (!roleName.startsWith("server.npcRoles.")) {
+                return roleName;
+            }
+            String[] words = key.replace("_", " ").toLowerCase().split(" ");
+            StringBuilder parsedName = new StringBuilder();
+            for (String word : words) {
+                if (!word.isEmpty()) {
+                    parsedName.append(Character.toUpperCase(word.charAt(0)))
+                              .append(word.substring(1))
+                              .append(" ");
+                }
+            }
+            return parsedName.toString().trim();
+        });
     }
 }
