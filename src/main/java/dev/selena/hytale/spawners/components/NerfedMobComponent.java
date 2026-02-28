@@ -40,6 +40,7 @@ public class NerfedMobComponent implements Component<EntityStore> {
     public Component<EntityStore> clone() {
         NerfedMobComponent clone = new NerfedMobComponent();
         clone.setDrops(this.drops);
+        clone.setOriginalMob(this.originalMob);
         return clone;
     }
 }
