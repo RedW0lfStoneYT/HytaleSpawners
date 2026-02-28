@@ -37,6 +37,7 @@ import com.hypixel.hytale.server.spawning.SpawningContext;
 import dev.selena.core.util.PlaceholderUtil;
 import dev.selena.hytale.spawners.SpawnerMain;
 import dev.selena.hytale.spawners.components.NerfedMobComponent;
+import dev.selena.hytale.spawners.util.SpawnerUtil;
 import dev.selena.hytale.spawners.util.config.Config;
 import dev.selena.hytale.spawners.util.config.Lang;
 import dev.selena.hytale.spawners.util.objects.SpawnerSpawnAttemptReturn;
@@ -107,6 +108,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
     private UUID previewEntityUUID;
     @Getter
     private Ref<EntityStore> previewEntity;
+    private boolean hasValid = true;
     private final Random random = new Random();
 
 
@@ -263,7 +265,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
     }
 
     public void updatePreviewEntity(CommandBuffer<ChunkStore> commandBuffer, Vector3i blockPos, boolean removeIfExist) {
-        if (!Config.get().isRenderMobModel())
+        if (!Config.get().isRenderMobModel() || !hasValid)
             return;
 
         Store<EntityStore> entityStore = commandBuffer.getExternalData().getWorld().getEntityStore().getStore();
@@ -301,14 +303,19 @@ public class SpawnerBlock implements Component<ChunkStore> {
             }
         }
 
-
-        Model model = Model.createStaticScaledModel(ModelAsset.getAssetMap().getAsset(getSpawnType()), 1f);
+        ModelAsset modelAsset = ModelAsset.getAssetMap().getAsset(getSpawnType());
+        if (modelAsset == null) {
+            hasValid = false;
+            return;
+        }
+        hasValid = true;
+        Model model = Model.createStaticScaledModel(modelAsset, 1f);
         double maxDimension = Math.max(
                 Math.max(model.getBoundingBox().dimension(Axis.X), model.getBoundingBox().dimension(Axis.Y)),
                 model.getBoundingBox().dimension(Axis.Z)
         );
         float scaleFactor = (float) (0.5 / maxDimension);
-        model = Model.createStaticScaledModel(ModelAsset.getAssetMap().getAsset(getSpawnType()), scaleFactor);
+        model = Model.createStaticScaledModel(modelAsset, scaleFactor);
 
         Holder<EntityStore> preview = entityStore.getRegistry().newHolder();
         preview.addComponent(NetworkId.getComponentType(), new NetworkId(entityStore.getExternalData().takeNextNetworkId()));
@@ -329,11 +336,15 @@ public class SpawnerBlock implements Component<ChunkStore> {
 
     }
 
-    public void removePreviewEntity(CommandBuffer<ChunkStore> commandBuffer) {
+    public void removePreviewEntity(CommandBuffer<ChunkStore> commandBuffer, Vector3i blockPos) {
         Store<EntityStore> entityStore = commandBuffer.getExternalData().getWorld().getEntityStore().getStore();
         if (previewEntity != null && previewEntity.isValid()) {
             entityStore.removeEntity(previewEntity, RemoveReason.REMOVE);
             previewEntity = null;
+            return;
         }
+        TargetUtil.getAllEntitiesInBox(blockPos.toVector3d().add(-0.5, -0.5, -0.5),
+                        blockPos.toVector3d().add(0.5, 0.5, 0.5), entityStore)
+                .forEach(entityStoreRef -> entityStore.removeEntity(entityStoreRef, RemoveReason.REMOVE));
     }
 }

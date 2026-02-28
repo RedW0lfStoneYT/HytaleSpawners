@@ -9,6 +9,7 @@ import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.asset.type.blocktick.BlockTickStrategy;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -187,7 +188,7 @@ public class SpawnerBlockSystem {
             int worldY = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getY(), y);
             int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkSection.getZ(), z);
             World world = commandBuffer.getExternalData().getWorld();
-            world.execute(() -> spawner.removePreviewEntity(commandBuffer));
+            world.execute(() -> spawner.removePreviewEntity(commandBuffer, new Vector3i(worldX, worldY, worldZ)));
             spawner.handleBlockBroken(world, entityStore, worldX, worldY, worldZ);
 
         }
