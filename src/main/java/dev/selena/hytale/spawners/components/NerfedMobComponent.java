@@ -18,14 +18,19 @@ public class NerfedMobComponent implements Component<EntityStore> {
 
     public static final BuilderCodec<NerfedMobComponent> CODEC = BuilderCodec.builder(NerfedMobComponent.class, NerfedMobComponent::new)
             .append(new KeyedCodec<>("DropListID", Codec.STRING),
-                    (component, integer) -> {
-                        component.drops = integer;
-                    }, component -> component.drops
-            ).add().build();
+                    (component, integer) -> component.drops = integer, component -> component.drops
+            ).add()
+            .append(new KeyedCodec<>("OriginalMob", Codec.STRING),
+                    (component, type) -> component.originalMob = type,
+                    component -> component.originalMob)
+            .add().build();
 
     @Getter
     @Setter
     private String drops;
+    @Getter
+    @Setter
+    private String originalMob;
 
     public NerfedMobComponent() {
     }

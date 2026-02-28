@@ -202,6 +202,7 @@ public class SpawnerBlock implements Component<ChunkStore> {
                 int emptyRoleIndex = NPCPlugin.get().getIndex("Spawner_Role");
                 NerfedMobComponent nerfedComponent = new NerfedMobComponent();
                 nerfedComponent.setDrops(entity.getRole().getDropListId());
+                nerfedComponent.setOriginalMob(entity.getRoleName());
                 RoleChangeSystem.requestRoleChange(entityRef, entity.getRole(), emptyRoleIndex, false, entityRef.getStore());
                 entityRef.getStore().addComponent(entityRef, NerfedMobComponent.getComponentType(), nerfedComponent);
             }
