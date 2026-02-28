@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.selena.core.HytaleCore;
 import dev.selena.hytale.spawners.blockstates.SpawnerBlock;
+import dev.selena.hytale.spawners.commands.SpawnerAdminCommand;
 import dev.selena.hytale.spawners.commands.SpawnerGiveCommand;
 import dev.selena.hytale.spawners.components.DisplayEntityComponent;
 import dev.selena.hytale.spawners.components.NerfedMobComponent;
@@ -42,9 +43,7 @@ public class SpawnerMain extends JavaPlugin {
         super(init);
         instance = this;
         HytaleCore.setupCore(this);
-        HytaleCore.loadAllConfigs(Configs.class);
-        config = Configs.CONFIG.getConfig();
-        lang = Configs.LANG.getConfig();
+        loadConfig();
     }
 
     @Override
@@ -68,7 +67,13 @@ public class SpawnerMain extends JavaPlugin {
         getChunkStoreRegistry().registerSystem(new SpawnerBlockSystem.OnSpawnerBlockAdd());
         getEntityStoreRegistry().registerSystem(new SpawnerBlockSystem.NerfedMobDeath());
         getCommandRegistry().registerCommand(new SpawnerGiveCommand());
+        getCommandRegistry().registerCommand(new SpawnerAdminCommand());
 
+    }
+
+    public void loadConfig() {
+        config = Configs.CONFIG.getConfig();
+        lang = Configs.LANG.getConfig();
     }
 
 
