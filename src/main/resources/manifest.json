@@ -9,5 +9,8 @@
     {
       "Name": "Selena"
     }
-  ]
+  ],
+  "UpdateChecker": {
+    "CurseForge": "1441491"
+  }
 }
