@@ -31,7 +31,7 @@ public class SpawnerShowDebugCommand extends AbstractAsyncPlayerCommand {
     public SpawnerShowDebugCommand() {
         super("debug-spawner", "Shows debug info about the spawner at a location");
         location = withRequiredArg("location", "The location of the spawner", ArgTypes.RELATIVE_BLOCK_POSITION);
-        setPermissionGroup(GameMode.Creative);
+        requirePermission("spawner.admin.debug");
     }
 
     @NotNull
