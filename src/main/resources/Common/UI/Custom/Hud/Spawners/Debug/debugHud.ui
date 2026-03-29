@@ -1,0 +1,29 @@
+Group {
+    Anchor: (Right: 10, Top: 10, Width: 220, Height: 175);
+    Background: #000000(0.7);
+    LayoutMode: Top;
+    Padding: (Horizontal: 10, Vertical: 8);
+
+    Label #TitleLabel {
+        Text: "Spawner Info";
+        Anchor: (Height: 22);
+        Style: (FontSize: 16, TextColor: #a200ff, RenderBold: true);
+    }
+
+    Label #SpawnerType {
+        Text: "Spawn Type: {spawner_type}";
+        Anchor: (Height: 17);
+        Style: (FontSize: 13, TextColor: #ffffff);
+    }
+
+    Label #TimeTillNextSpawn {
+        Text: "Next Spawn in:";
+        Anchor: (Height: 17);
+        Style: (FontSize: 13, TextColor: #ffffff);
+    }
+    TimerLabel #TimeLeft {
+        Style: (FontSize: 13);
+        Seconds: 0;
+    }
+
+}
