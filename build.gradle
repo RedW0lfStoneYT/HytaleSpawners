@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'dev.selena'
-version = '1.4.2'
+version = '1.5.0'
 description = "An easy to use spawner mod for Hytale servers"
 
 repositories {
@@ -15,6 +15,7 @@ repositories {
         name = "hytale-release"
         url = uri("https://maven.hytale.com/release")
     }
+    maven { url "https://cursemaven.com" }
 }
 
 dependencies {
@@ -24,12 +25,13 @@ dependencies {
     implementation("org.jetbrains:annotations:24.1.0")
     compileOnly 'org.projectlombok:lombok:1.18.40'
     annotationProcessor 'org.projectlombok:lombok:1.18.40'
-    implementation("dev.selena.hytalecore:HytaleCore:1.0")
+    implementation("dev.selena.hytalecore:HytaleCore:1.1")
 
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-//    compileOnly files("libs/DynamicTooltipsLib-1.5.0.jar")
-    implementation("dev.selena.DynamicTooltips:DynamicTooltipsLib:1.0")
+    // Dynamic Tooltips Library - https://www.curseforge.com/hytale/mods/dynamictooltipslib
+    compileOnly "curse.maven:dynamictooltipslib-1459711:7817318"
+
 }
 
 // Configure Java compilation
