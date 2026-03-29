@@ -79,6 +79,16 @@ public class Config {
     @Comment("Should the spawner drop when mined")
     private boolean dropSpawnerWhenMined = true;
 
+    @Getter
+    @Expose
+    @Comment("Doesnt do a lot currently but there is more in the works")
+    private boolean debugMode = true;
+
+    @Getter
+    @Expose
+    @Comment("Do you want to opt out of telemetry?")
+    private boolean telemetryOptOut = true;
+
 
     public static Config get() {
         return SpawnerMain.get().getConfig();
