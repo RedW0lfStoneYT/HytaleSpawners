@@ -10,7 +10,6 @@ import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.inventory.container.CombinedItemContainer;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -91,8 +90,7 @@ public class SpawnerGiveCommand extends AbstractAsyncCommand {
         return CompletableFuture.runAsync(() -> {
 
             Player player = store.getComponent(playerRef.getReference(), Player.getComponentType());
-            CombinedItemContainer inventory = new CombinedItemContainer(player.getInventory().getHotbar(), player.getInventory().getStorage());
-            inventory.addItemStack(finalSpawnerItem);
+            player.giveItem(finalSpawnerItem, playerRef.getReference(), playerRef.getReference().getStore());
             commandContext.sender().sendMessage(PlaceholderUtil.parsePlaceholdersToMessage(Lang.get().getSpawnerGiven(),
                     "{spawner_type}", spawnerType,
                     "{spawner_type_name}", SpawnerUtil.parseName(spawnerType),
