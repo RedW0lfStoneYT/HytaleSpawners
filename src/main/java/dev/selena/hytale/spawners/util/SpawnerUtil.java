@@ -31,12 +31,12 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SpawnerUtil {
 
-    private static final HashMap<String, String> cachedNames = new HashMap<>();
+    private static final ConcurrentHashMap<String, String> cachedNames = new ConcurrentHashMap<>();
 
 
     public static void tickSpawnerBlock(CommandBuffer<ChunkStore> commandBuffer, BlockChunk blockChunk, BlockSection blockSection, Ref<ChunkStore> sectionRef, Ref<ChunkStore> blockRef, SpawnerBlock spawnerBlock, int x, int y, int z, boolean initialTick) {
@@ -50,6 +50,7 @@ public class SpawnerUtil {
             spawnerBlock.setLastSpawnGameTick(currentTime);
         }
         long elapsed = currentTime.getEpochSecond() - spawnerBlock.getLastSpawnGameTick().getEpochSecond();
+
         world.execute(() -> {
             ChunkSection section = commandBuffer.getComponent(sectionRef, ChunkSection.getComponentType());
             int worldX = ChunkUtil.worldCoordFromLocalCoord(section.getX(), x);
@@ -57,39 +58,42 @@ public class SpawnerUtil {
             int worldZ = ChunkUtil.worldCoordFromLocalCoord(section.getZ(), z);
             spawnerBlock.updatePreviewEntity(commandBuffer, new Vector3i(worldX, worldY, worldZ), false);
 
-            AtomicInteger nearbyNPCCount = new AtomicInteger();
-            if (Config.get().isCheckNearbyEntities()) {
-                Size checkRadius = Config.get().getNearbyEntitiesCheckRadius();
-                int width = checkRadius.width;
-                int height = checkRadius.height;
-
-                ComponentType<EntityStore, NPCEntity> npcComponentType = NPCEntity.getComponentType();
-
-                TargetUtil.getAllEntitiesInBox(
-                        new Vector3d(worldX - (width + 1.5), worldY - (height + 1.5), worldZ - (width + 1.5)),
-                        new Vector3d(worldX + (width + 1.5), worldY + (height + 1.5), worldZ + (width + 1.5)),
-                        world.getEntityStore().getStore()
-                ).forEach(entityRef -> {
-                    if (entityRef == null || !entityRef.isValid()) {
-                        return;
-                    }
-                    if (entityRef.getStore().getComponent(entityRef, npcComponentType) != null) {
-                        nearbyNPCCount.getAndIncrement();
-                    }
-                });
-                if (nearbyNPCCount.get() >= Config.get().getMaxNearbyEntities()) {
-                    return;
-                }
-            }
-
             if (elapsed >= spawnerBlock.getCurrentSpawnIntervalTicks()) {
                 int max = -1;
                 if (Config.get().isCheckNearbyEntities()) {
+                    AtomicInteger nearbyNPCCount = new AtomicInteger();
+                    if (Config.get().isCheckNearbyEntities()) {
+                        Size checkRadius = Config.get().getNearbyEntitiesCheckRadius();
+                        int width = checkRadius.width;
+                        int height = checkRadius.height;
+
+                        ComponentType<EntityStore, NPCEntity> npcComponentType = NPCEntity.getComponentType();
+
+                        TargetUtil.getAllEntitiesInBox(
+                                new Vector3d(worldX - (width + 1.5), worldY - (height + 1.5), worldZ - (width + 1.5)),
+                                new Vector3d(worldX + (width + 1.5), worldY + (height + 1.5), worldZ + (width + 1.5)),
+                                world.getEntityStore().getStore()
+                        ).forEach(entityRef -> {
+                            if (entityRef == null || !entityRef.isValid()) {
+                                return;
+                            }
+                            if (entityRef.getStore().getComponent(entityRef, npcComponentType) != null) {
+                                nearbyNPCCount.getAndIncrement();
+                            }
+                        });
+                        if (nearbyNPCCount.get() >= Config.get().getMaxNearbyEntities()) {
+                            spawnerBlock.setLastSpawnGameTick(currentTime);
+                            spawnerBlock.setSpawnInterval();
+                            return;
+                        }
+                    }
                     max = Math.max(Config.get().getMaxNearbyEntities() - nearbyNPCCount.get(), 0);
                 }
                 SpawnerSpawnEvent.Pre pre = HytaleServer.get().getEventBus().dispatchFor(SpawnerSpawnEvent.Pre.class)
                         .dispatch(new SpawnerSpawnEvent.Pre(spawnerBlock, spawnerBlock.getSpawnType(), world, max));
                 if (pre.isCancelled()) {
+                    spawnerBlock.setLastSpawnGameTick(currentTime);
+                    spawnerBlock.setSpawnInterval();
                     return;
                 }
                 SpawnerSpawnAttemptReturn spawned = new SpawnerSpawnAttemptReturn();
@@ -151,4 +155,22 @@ public class SpawnerUtil {
             return parsedName.toString().trim();
         });
     }
+
+    public static int getTimeRemaining(SpawnerBlock spawnerBlock, World world) {
+        WorldTimeResource worldTimeResource = world.getEntityStore().getStore().getResource(WorldTimeResource.getResourceType());
+        Instant currentTime = Config.get().isUseWorldTimeTicks() ?
+                worldTimeResource.getGameTime()
+                : Instant.ofEpochSecond(System.currentTimeMillis() / (1000L/world.getTps()));
+        if (spawnerBlock.getLastSpawnGameTick() == null) {
+            spawnerBlock.setLastSpawnGameTick(currentTime);
+        }
+        long elapsed = currentTime.getEpochSecond() - spawnerBlock.getLastSpawnGameTick().getEpochSecond();
+        return (int) (spawnerBlock.getCurrentSpawnIntervalTicks() - elapsed);
+    }
+
+    public static int getTimeRemainingSeconds(SpawnerBlock spawnerBlock, World world) {
+        int ticksRemaining = getTimeRemaining(spawnerBlock, world);
+        return (int) Math.ceil(ticksRemaining / (double) world.getTps());
+    }
+
 }
