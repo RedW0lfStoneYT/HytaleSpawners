@@ -1,5 +1,6 @@
 package dev.selena.hytale.spawners;
 
+import com.al3x.HStats;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -18,7 +19,6 @@ import dev.selena.hytale.spawners.util.config.Lang;
 import dev.selena.hytale.spawners.util.dynamictooltips.providers.CustomTooltipProvider;
 import dev.selena.hytale.spawners.util.dynamictooltips.providers.RenameTooltipProvider;
 import lombok.Getter;
-import org.herolias.tooltips.DynamicTooltipsLib;
 import org.herolias.tooltips.api.DynamicTooltipsApi;
 import org.herolias.tooltips.api.DynamicTooltipsApiProvider;
 import org.jetbrains.annotations.NotNull;
@@ -44,11 +44,13 @@ public class SpawnerMain extends JavaPlugin {
         instance = this;
         HytaleCore.setupCore(this);
         loadConfig();
+        HytaleCore.setDebugMode(config.isDebugMode());
     }
 
     @Override
     protected void setup() {
-        new DynamicTooltipsLib(this).setup();
+        if (!config.isTelemetryOptOut())
+            new HStats("388a30dc-55ff-40e4-8438-2545cd4b7c27", this.getManifest().getVersion().toString());
         tooltipsApi = DynamicTooltipsApiProvider.get();
         if (tooltipsApi == null) {
             getLogger().at(Level.SEVERE).log("DynamicTooltipsLib API not available! Is the library installed?");
