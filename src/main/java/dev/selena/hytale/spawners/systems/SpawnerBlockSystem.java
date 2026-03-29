@@ -32,7 +32,6 @@ import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.npc.systems.NPCDamageSystems;
 import dev.selena.hytale.spawners.SpawnerMain;
 import dev.selena.hytale.spawners.blockstates.SpawnerBlock;
 import dev.selena.hytale.spawners.components.NerfedMobComponent;
@@ -44,7 +43,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 public class SpawnerBlockSystem {
 
@@ -278,48 +280,78 @@ public class SpawnerBlockSystem {
         }
     }
 
-    public static class NerfedMobDeath extends NPCDamageSystems.DropDeathItems {
+    public static final class NerfedMobDeath extends EntityTickingSystem<EntityStore> {
+        private final ComponentType<EntityStore, NerfedMobComponent> nerfedType;
+        private final ComponentType<EntityStore, DeathComponent> deathType;
+        private final ComponentType<EntityStore, TransformComponent> transformType;
+        private final ComponentType<EntityStore, HeadRotation> headRotType;
+        private final Set<Ref<EntityStore>> processed = Collections.newSetFromMap(new WeakHashMap<>());
 
-
-        @Override
-        public void onComponentAdded(@NotNull Ref<EntityStore> ref, @NotNull DeathComponent component, @NotNull Store<EntityStore> store, @NotNull CommandBuffer<EntityStore> commandBuffer) {
-            NerfedMobComponent nerfedMobComponent = store.getComponent(ref, NerfedMobComponent.getComponentType());
-            if (nerfedMobComponent == null) {
-                return;
-            }
-            String dropListID = nerfedMobComponent.getDrops();
-            List<ItemStack> itemsToDrop = new ObjectArrayList<>();
-
-            if (dropListID != null) {
-                ItemModule itemModule = ItemModule.get();
-                if (itemModule.isEnabled()) {
-                    List<ItemStack> randomItemsToDrop = itemModule.getRandomItemDrops(dropListID);
-                    itemsToDrop.addAll(randomItemsToDrop);
-                }
-            }
-            if (!itemsToDrop.isEmpty()) {
-                TransformComponent transformComponent = store.getComponent(ref, TransformComponent.getComponentType());
-                if (transformComponent == null) {
-                    throw new AssertionError();
-                }
-                Vector3d position = transformComponent.getPosition();
-                HeadRotation headRotationComponent = store.getComponent(ref, HeadRotation.getComponentType());
-                if (headRotationComponent == null) {
-                    throw new AssertionError();
-                }
-                Vector3f headRotation = headRotationComponent.getRotation();
-                Vector3d dropPosition = position.clone().add(0.0d, 1.0d, 0.0d);
-                Holder<EntityStore>[] drops = ItemComponent.generateItemDrops(store, itemsToDrop, dropPosition, headRotation.clone());
-                commandBuffer.addEntities(drops, AddReason.SPAWN);
-            }
-
-
-
+        public NerfedMobDeath() {
+            this.nerfedType = NerfedMobComponent.getComponentType();
+            this.deathType = DeathComponent.getComponentType();
+            this.transformType = TransformComponent.getComponentType();
+            this.headRotType = HeadRotation.getComponentType();
         }
 
         @Override
+        public void tick(float v, int i, @NotNull ArchetypeChunk<EntityStore> archetypeChunk,
+                         @NotNull Store<EntityStore> store, @NotNull CommandBuffer<EntityStore> commandBuffer) {
+
+            int count = archetypeChunk.size();
+            for (int idx = 0; idx < count; idx++) {
+                Ref<EntityStore> ref = archetypeChunk.getReferenceTo(idx);
+
+                if (processed.contains(ref)) {
+                    continue;
+                }
+
+                NerfedMobComponent nerfed = archetypeChunk.getComponent(idx, nerfedType);
+                DeathComponent death = archetypeChunk.getComponent(idx, deathType);
+
+                if (nerfed == null || death == null) {
+                    continue;
+                }
+
+                String dropListID = nerfed.getDrops();
+                List<ItemStack> itemsToDrop = new ObjectArrayList<>();
+
+                if (dropListID != null) {
+                    ItemModule itemModule = ItemModule.get();
+                    if (itemModule.isEnabled()) {
+                        itemsToDrop.addAll(itemModule.getRandomItemDrops(dropListID));
+                    }
+                }
+
+                if (!itemsToDrop.isEmpty()) {
+                    TransformComponent transform = archetypeChunk.getComponent(idx, transformType);
+                    HeadRotation headRotation = archetypeChunk.getComponent(idx, headRotType);
+
+                    if (transform != null && headRotation != null) {
+                        Vector3d position = transform.getPosition();
+                        Vector3d dropPosition = position.clone().add(0.0d, 1.0d, 0.0d);
+                        Vector3f headRot = headRotation.getRotation();
+
+                        Holder<EntityStore>[] drops = ItemComponent.generateItemDrops(store, itemsToDrop, dropPosition, headRot.clone());
+                        commandBuffer.addEntities(drops, AddReason.SPAWN);
+                    }
+                }
+
+                processed.add(ref);
+
+                if (store.getComponent(ref, nerfedType) != null) {
+                    try {
+                        commandBuffer.removeComponent(ref, nerfedType);
+                    } catch (IllegalArgumentException ignored) { }
+                }
+            }
+
+        }
+
+        @Nonnull
+        @Override
         public Query<EntityStore> getQuery() {
-            return NerfedMobComponent.getComponentType();
+            return Query.and(NerfedMobComponent.getComponentType(), DeathComponent.getComponentType());
         }
     }
 

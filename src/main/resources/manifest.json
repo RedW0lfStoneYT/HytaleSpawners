@@ -12,5 +12,8 @@
   ],
   "UpdateChecker": {
     "CurseForge": "1441491"
+  },
+  "Dependencies": {
+    "org.herolias:DynamicTooltipsLib": "*"
   }
 }
